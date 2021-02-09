@@ -166,6 +166,10 @@ function QueryBuilder(schema) {
             return `(${key} BETWEEN ${begin} AND ${end})`;
         }
         let operator = '='
+        if (value.includes('__%__') || value.includes('__?__')) {
+            value = value.replace(/__%__/g, '%').replace(/__\?__/g, '_');
+            operator = 'LIKE'
+        }
         const operators = ['=', '>=', '<=', '<>', '>', '<', '!=', 'LIKE', 'IS']
         for (const operation of operators) {
             if (value.startsWith(`__${operation}__`)) {
@@ -177,9 +181,6 @@ function QueryBuilder(schema) {
                 operator = operation
                 break;
             }
-        }
-        if (value.includes('__%__') || value.includes('__?__')) {
-            value = value.replace(/__%__/g, '%').replace(/__\?__/g, '_');
         }
         return `${key} ${operator} ${esc(value)}`;
     }
