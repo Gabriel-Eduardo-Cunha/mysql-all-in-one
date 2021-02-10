@@ -37,21 +37,21 @@ query = QueryBuilder.select('product', {
             select: 
         }
     ],
-    where: { // WHERE conditions, by default uses 'AND' between conditions
-        'product.id': 1, // id = 1
-        'product.name': "__LIKE__pen", // name lIKE 'pen'
-        description: "__%__blue__%__", // description LIKE '%blue%'
-        text: "bl__?__ck", // text LIKE 'bl_ck' (will match for 'black' and 'block')
-        'product_category.productId': [1,2,3,'a','b'], // product_category.productId IN (1,2,3,'a','b')
-        price: "1.5__BETWEEN__2.5", // (price BETWEEN 1.5 AND 2.5)
-        isEnabled: true, // isEnable IS TRUE (works for: false)
-        categoryId: null, // categoryId IS NULL (works for: undefined, witch is going to be 'NULL')
-        isHighlighted: "__IS__NOT NULL", // isHighlighted IS NOT NULL (when __IS__ is used, the rest becomes SQL expression)
-        userReviews: "__>__3", // userReviews > 3 (works for: >, <, >=, <=, <>, !=, =)
-        expirationDate: // expirationDate = STR_TO_DATE(expirationDate, '%d/%m/%Y')
-            `__EXPRESSION__STR_TO_DATE(expirationDate, '%d/%m/%Y')`, //  __EXPRESSION__ makes it a SQL expression
+    where: {                                                            // WHERE conditions, by default uses 'AND' between conditions
+        'product.id': 1,                                                // id = 1
+        'product.name': "__LIKE__pen",                                  // name lIKE 'pen'
+        description: "__%__blue__%__",                                  // description LIKE '%blue%'
+        text: "bl__?__ck",                                              // text LIKE 'bl_ck' (will match for 'black' and 'block')
+        'product_category.productId': [1,2,3,'a','b'],                  // product_category.productId IN (1,2,3,'a','b')
+        price: "1.5__BETWEEN__2.5",                                     // (price BETWEEN 1.5 AND 2.5)
+        isEnabled: true,                                                // isEnable IS TRUE (works for: false)
+        categoryId: null,                                               // categoryId IS NULL (works for: undefined, witch is going to be 'NULL')
+        isHighlighted: "__IS__NOT NULL",                                // isHighlighted IS NOT NULL (when __IS__ is used, the rest becomes SQL expression)
+        userReviews: "__>__3",                                          // userReviews > 3 (works for: >, <, >=, <=, <>, !=, =)
+        expirationDate:                                                 // expirationDate = STR_TO_DATE(expirationDate, '%d/%m/%Y')
+            `__EXPRESSION__STR_TO_DATE(expirationDate, '%d/%m/%Y')`,    //  __EXPRESSION__ makes it a SQL expression
         __WHERE__:  `(size = (SELECT size FROM secondaryProduct WHERE id = 1) OR size IS NULL)`,
-        // The __WHERE__ key will make another WHERE and concatenate it
+                                                                        // The __WHERE__ key will make another WHERE and concatenate it
     },
     having: { // works exactly like WHERE
         expirationDate: "__LIKE__20/08/2000" // HAVING expirationDate LIKE '20/08/2000'
