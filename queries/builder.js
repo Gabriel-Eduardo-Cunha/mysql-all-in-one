@@ -12,29 +12,14 @@ function QueryBuilder(schema) {
     this.setSchema(schema)
 
     this.where = (whereFilter, and = true) => {
-        if (typeof whereFilter === 'string' && whereFilter !== '') {
-            return `WHERE ${whereFilter}`
-        } else if (Array.isArray(whereFilter) && whereFilter.length > 0) {
-            if (whereFilter.includes('__OR__')) {
-                whereFilter = whereFilter.filter(whereString => whereString !== '__OR__')
-                and = false
-            }
-            return `WHERE ${whereFilter.join(and ? ' AND ' : ' OR ')}`
-        } else if (typeof whereFilter === 'object' && whereFilter !== null) {
-            if (Object.keys(whereFilter).includes('__OR__')) {
-                and = whereFilter['__OR__'] ? false : true
-                delete whereFilter['__OR__']
-            }
-            const whereFilterArray = buildWhereArrayFromObject(whereFilter)
-            if (whereFilterArray.length === 0) return "";
-            return `WHERE ${buildWhereArrayFromObject(whereFilter).join(and ? ' AND ' : ' OR ')}`
-        } else {
-            return ""
-        }
+        const whereString = buildWhere(whereFilter, and)
+        if(whereString === "") return "";
+        return `WHERE ${whereString}`
     }
     this.select = (table, selectConfigs = {}) => {
         if (typeof selectConfigs !== 'object' || selectConfigs === null) selectConfigs = {};
         if (selectConfigs.whereAnd === undefined) selectConfigs.whereAnd = true;
+        selectSchema = selectConfigs.schema !== undefined ? selectConfigs.schema : schema
         const select = `SELECT ${selectColumns((selectConfigs.select || null), table)}`
         const from = `FROM ${schema ? `${schema}.` : ''}${table}`
         const { join, joinColumns } = selectConfigs.join ? this.join(selectConfigs.join) : { join: '', joinColumns: '' }
@@ -61,24 +46,19 @@ function QueryBuilder(schema) {
         return query
     }
     this.insert = (table, rows) => {
-        if(Array.isArray(rows)) {
+        if (Array.isArray(rows)) {
             const columns = rows.map(row => Object.keys(row)).reduce((prev, curr) => {
                 return prev.concat(curr.filter((item) => prev.indexOf(item) < 0))
             }, [])
             const values = rows.map(row => `(${columns.map(column => row[column]).map(esc).join(',')})`)
             return `INSERT INTO ${schema ? `${schema}.` : ''}${table} (${columns.join(',')}) VALUES ${values.join(',')};`
-        } else if(!Array.isArray(rows) && typeof rows === 'object' && rows !== null) {
-            return this.insertRow(table, rows)
+        } else if (!Array.isArray(rows) && typeof rows === 'object' && rows !== null) {
+            return insertRow(table, rows)
         } else {
             return null
         }
     }
-    this.insertRow = (table, row) => {
-        const columns = `(${Object.keys(row).join(',')})`
-        const values = `(${Object.values(row).map(esc).join(',')})`
-        const query = `INSERT INTO ${schema ? `${schema}.` : ''}${table} ${columns} VALUES ${values};`
-        return query
-    }
+
     this.update = (table, data, where) => {
         const set = buildSet(data)
         const whereQuery = this.where(where)
@@ -97,13 +77,17 @@ function QueryBuilder(schema) {
             if (typeof join === 'object' && join !== null && !Array.isArray(join)) {
                 join = [join]
             }
+            const joinTypes = ['INNER', 'LEFT', 'RIGHT', 'FULL']
             const result = join.map(joinObject => {
+                if(typeof joinObject.type !== 'string' || !joinTypes.includes(joinObject.type.toUpperCase())) {
+                    joinObject.type = 'INNER'
+                }
                 if ((!joinObject.table && !defaultTable) || !joinObject.on) {
                     return { join: null, joinColumns: null }
                 }
                 const from = `${joinObject.schema || schema ? `${joinObject.schema || schema}.` : ''}${joinObject.table || defaultTable}`
                 const joinColumns = joinObject.select !== undefined && joinObject.select !== {} ? joinObject.select : null
-                const join = `${(joinObject.type || 'INNER').toUpperCase()} JOIN ${from} ON ${joinObject.on}`
+                const join = `${(joinObject.type || 'INNER').toUpperCase()} JOIN ${from} ON (${buildWhere(joinObject.on)})`
                 return { join, joinColumns }
             })
             const joins = result.map(join => join.join)
@@ -134,10 +118,32 @@ function QueryBuilder(schema) {
         return columns
     }
 
+    function buildWhere(whereFilter, and=true) {
+        if (typeof whereFilter === 'string' && whereFilter !== '') {
+            return whereFilter
+        } else if (Array.isArray(whereFilter) && whereFilter.length > 0) {
+            if (whereFilter.includes('__OR__')) {
+                whereFilter = whereFilter.filter(whereString => whereString !== '__OR__')
+                and = false
+            }
+            return `${whereFilter.join(and ? ' AND ' : ' OR ')}`
+        } else if (typeof whereFilter === 'object' && whereFilter !== null) {
+            if (Object.keys(whereFilter).includes('__OR__')) {
+                and = whereFilter['__OR__'] ? false : true
+                delete whereFilter['__OR__']
+            }
+            const whereFilterArray = buildWhereArrayFromObject(whereFilter)
+            if (whereFilterArray.length === 0) return "";
+            return buildWhereArrayFromObject(whereFilter).join(and ? ' AND ' : ' OR ')
+        } else {
+            return ''
+        }
+    }
+
     function buildWhereArrayFromObject(object) {
         const result = Object.entries(object).map(([key, value]) => {
-            if (key === '__EXPRESSION__') {
-                return value
+            if (key === '__WHERE__') {
+                return buildWhere(value)
             }
             if (typeof value === 'function') {
                 value = value()
@@ -155,7 +161,8 @@ function QueryBuilder(schema) {
             } else if (typeof value === 'boolean') {
                 return `${key} IS ${value ? 'TRUE' : 'FALSE'}`
             }
-        })
+            return null;
+        }).filter(result => result !== null)
         return result;
     }
 
@@ -198,6 +205,13 @@ function QueryBuilder(schema) {
         }
         const set = `SET ${columnSets}`
         return set
+    }
+
+    function insertRow(table, row) {
+        const columns = `(${Object.keys(row).join(',')})`
+        const values = `(${Object.values(row).map(esc).join(',')})`
+        const query = `INSERT INTO ${schema ? `${schema}.` : ''}${table} ${columns} VALUES ${values};`
+        return query
     }
 
 }
