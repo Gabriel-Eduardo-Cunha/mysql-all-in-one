@@ -17,7 +17,6 @@ module.exports = {
         return new QueryBuilder(this.schema);
     },
     get MysqlDAO() {
-        if(this.connection === null) throw "Create a connection first with the method `createConnection()`.";
         return new MysqlDAO(this.connection, this.schema);
     }
 }

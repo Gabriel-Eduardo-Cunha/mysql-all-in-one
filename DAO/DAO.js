@@ -3,6 +3,19 @@
 module.exports = function(connection, schema) {
     this.QueryBuilder = new (require('../queries/builder'))(schema);
 
+    this.connection = connection
+
+    this.setConnection = connection => {
+        this.connection = connection
+    }
+    this.createConnection = (...params) => {
+        this.connection = mysql.createConnection(...params)
+    },
+
+    this.setSchema = schema => {
+        this.QueryBuilder.setSchema(schema)
+    }
+
     /**
      * Select data from table and return the dataset
      * @param {String} table table to select
@@ -127,8 +140,9 @@ module.exports = function(connection, schema) {
      * @return {Promise} Result from query 
      */
     this.execQuery = (query, callback = r => r) => {
+        if(connection === null) throw "No connection, please use method setConnection or createConnection.";
         return new Promise((resolve, reject) => {
-            connection.query(query, (err, results) => {
+            this.connection.query(query, (err, results) => {
                 if(err) {
                     reject(err)
                 } else {
