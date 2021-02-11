@@ -15,7 +15,7 @@ function esc(value) {
     if (value === false || value === true) {
         return value ? 'TRUE' : 'FALSE'
     }
-    if (!isNaN(value) && value !== '' && !(typeof value === 'string' && (value.includes(' ') || value.includes('\n')))) {
+    if (!isNaN(value) && typeof value !== 'string') {
         return value
     }
     if (typeof value === 'string' && value.startsWith('__EXPRESSION__')) {

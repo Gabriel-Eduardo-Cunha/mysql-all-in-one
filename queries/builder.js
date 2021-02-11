@@ -177,15 +177,15 @@ function QueryBuilder(schema) {
             value = value.replace(/__%__/g, '%').replace(/__\?__/g, '_');
             operator = 'LIKE'
         }
-        const operators = ['=', '>=', '<=', '<>', '>', '<', '!=', 'LIKE', 'IS']
+        const operators = ['=', '>=', '<=', '<>', '>', '<', '!=', 'LIKE', 'IS', 'NOT_LIKE', 'IS_NOT']
         for (const operation of operators) {
             if (value.startsWith(`__${operation}__`)) {
-                if (operation === 'IS') {
+                if (operation === 'IS' || operation === 'IS_NOT') {
                     value = value.replace(`__${operation}__`, '__EXPRESSION__')
                 } else {
                     value = value.replace(`__${operation}__`, '')
                 }
-                operator = operation
+                operator = operation.replace(/_/g, ' ')
                 break;
             }
         }
