@@ -11,8 +11,8 @@ function QueryBuilder(schema) {
     }
     this.setSchema(schema)
 
-    this.where = (whereFilter, and = true) => {
-        const whereString = buildWhere(whereFilter, and)
+    this.where = (whereFilter, and = true, wrap=false) => {
+        const whereString = buildWhere(whereFilter, and, wrap)
         if(whereString === "") return "";
         return `WHERE ${whereString}`
     }
@@ -118,7 +118,7 @@ function QueryBuilder(schema) {
         return columns
     }
 
-    function buildWhere(whereFilter, and=true) {
+    function buildWhere(whereFilter, and=true, wrap=false) {
         if (typeof whereFilter === 'string' && whereFilter !== '') {
             return whereFilter
         } else if (Array.isArray(whereFilter) && whereFilter.length > 0) {
@@ -132,9 +132,17 @@ function QueryBuilder(schema) {
                 and = whereFilter['__OR__'] ? false : true
                 delete whereFilter['__OR__']
             }
+            if (Object.keys(whereFilter).includes('__BRACKETS__')) {
+                wrap = whereFilter['__BRACKETS__'] ? true : false
+                delete whereFilter['__BRACKETS__']
+            }
             const whereFilterArray = buildWhereArrayFromObject(whereFilter)
             if (whereFilterArray.length === 0) return "";
-            return buildWhereArrayFromObject(whereFilter).join(and ? ' AND ' : ' OR ')
+            const whereResult = whereFilterArray.join(and ? ' AND ' : ' OR ')
+            if(wrap) {
+                return `(${whereResult})`
+            }
+            return whereResult
         } else {
             return ''
         }
