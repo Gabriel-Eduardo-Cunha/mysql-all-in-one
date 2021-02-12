@@ -21,5 +21,5 @@ function esc(value) {
     if (typeof value === 'string' && value.startsWith('__EXPRESSION__')) {
         return value.replace(/__EXPRESSION__/g, '')
     }
-    return `'${value}'`
+    return `'${String(value).replace(/'/g, '\\\'')}'`
 }
