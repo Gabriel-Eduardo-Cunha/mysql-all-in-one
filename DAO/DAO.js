@@ -1,4 +1,4 @@
-
+const mysql = require('mysql');
 
 module.exports = function(connection, schema) {
     this.QueryBuilder = new (require('../queries/builder'))(schema);
@@ -140,7 +140,7 @@ module.exports = function(connection, schema) {
      * @return {Promise} Result from query 
      */
     this.execQuery = (query, callback = r => r) => {
-        if(connection === null) throw "No connection, please use method setConnection or createConnection.";
+        if(this.connection === null) throw "No connection, please use method setConnection or createConnection.";
         return new Promise((resolve, reject) => {
             this.connection.query(query, (err, results) => {
                 if(err) {
