@@ -225,8 +225,6 @@ function QueryBuilder(schema) {
         return query
     }
 
-    function es
-
 }
 
 module.exports = QueryBuilder
