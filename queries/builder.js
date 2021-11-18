@@ -1,6 +1,9 @@
 const { esc, isEmptyString } = require('./string_manipulator');
+const mysql = require('mysql')
 
 function QueryBuilder(schema) {
+
+    this.format = (...args) => mysql.format(...args)
 
     this.setSchema = (newSchema) => {
         if (newSchema && typeof newSchema === 'string') {
@@ -221,6 +224,8 @@ function QueryBuilder(schema) {
         const query = `INSERT INTO ${schema ? `${schema}.` : ''}${table} ${columns} VALUES ${values};`
         return query
     }
+
+    function es
 
 }
 
