@@ -118,19 +118,24 @@ module.exports = function(connection, schema) {
         if(typeof row !== 'object' || row === null) {
             throw "Row param must be an Object";
         }
-        if(typeof identifiers === "string") {
-            identifiers = [identifiers]
-        }
-        if(identifiers.map(id => Object.keys(row).includes(id)).reduce((prev, curr) => prev || curr)) {
-            const where = {}
-            Object.entries(row).forEach(([key, val]) => {
-                if(identifiers.includes(key)) {
-                    where[key] = val
-                }
-            });
-            return this.update(table, row, where)
-        }
-        return this.insert(table, row)
+        return new Promise((resolve) => {
+            if(typeof identifiers === "string") {
+                identifiers = [identifiers]
+            }
+            if(identifiers.map(id => Object.keys(row).includes(id)).reduce((prev, curr) => prev || curr)) {
+                const where = {}
+                Object.entries(row).forEach(([key, val]) => {
+                    if(identifiers.includes(key)) {
+                        where[key] = val
+                    }
+                });
+                let values = Object.values(where)
+                values = values.length === 1 ? values[0] : values
+                this.update(table, row, where).then(() => resolve(values))
+            } else {
+                this.insert(table, row).then(resolve)
+            }
+        })
     }
 
     /**
