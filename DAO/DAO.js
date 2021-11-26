@@ -125,7 +125,7 @@ module.exports = function(connection, schema) {
             if(identifiers.map(id => Object.keys(row).includes(id)).reduce((prev, curr) => prev || curr)) {
                 const where = {}
                 Object.entries(row).forEach(([key, val]) => {
-                    if(identifiers.includes(key)) {
+                    if(val !== undefined && identifiers.includes(key)) {
                         where[key] = val
                     }
                 });
