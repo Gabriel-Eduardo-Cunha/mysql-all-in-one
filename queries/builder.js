@@ -165,7 +165,7 @@ function QueryBuilder(schema) {
                 return buildCondition(key, value);
             } else if (Array.isArray(value)) {
                 return `${key} IN (${value.map(esc).join(',')})`
-            } else if (value === null || value === undefined) {
+            } else if (value === null) {
                 return `${key} IS NULL`
             } else if (value === '') {
                 return `${key} = ''`
