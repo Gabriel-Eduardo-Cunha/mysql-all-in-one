@@ -24,7 +24,7 @@ function QueryBuilder(schema) {
         if (selectConfigs.whereAnd === undefined) selectConfigs.whereAnd = true;
         selectSchema = selectConfigs.schema !== undefined ? selectConfigs.schema : schema
         const select = `SELECT ${selectColumns((selectConfigs.select || null), table)}`
-        const from = `FROM ${schema ? `${schema}.` : ''}${table}`
+        const from = `FROM ${schema ? `\`${schema}\`.` : ''}\`${table}\``
         const { join, joinColumns } = selectConfigs.join ? this.join(selectConfigs.join) : { join: '', joinColumns: '' }
         const where = selectConfigs.where ? this.where(selectConfigs.where, selectConfigs.whereAnd) : ''
         const having = selectConfigs.having ? this.where(selectConfigs.having).replace('WHERE', 'HAVING') : ''
@@ -54,7 +54,7 @@ function QueryBuilder(schema) {
                 return prev.concat(curr.filter((item) => prev.indexOf(item) < 0))
             }, [])
             const values = rows.map(row => `(${columns.map(column => row[column]).map(esc).join(',')})`)
-            return `INSERT INTO ${schema ? `${schema}.` : ''}${table} (${columns.join(',')}) VALUES ${values.join(',')};`
+            return `INSERT INTO ${schema ? `\`${schema}\`.` : ''}\`${table}\` (${columns.join(',')}) VALUES ${values.join(',')};`
         } else if (!Array.isArray(rows) && typeof rows === 'object' && rows !== null) {
             return insertRow(table, rows)
         } else {
@@ -65,12 +65,12 @@ function QueryBuilder(schema) {
     this.update = (table, data, where) => {
         const set = buildSet(data)
         const whereQuery = this.where(where)
-        const query = `UPDATE ${schema ? `${schema}.` : ''}${table} ${set} ${whereQuery};`
+        const query = `UPDATE ${schema ? `\`${schema}\`.` : ''}\`${table}\` ${set} ${whereQuery};`
         return query
     }
     this.delete = (table, where) => {
         const whereQuery = this.where(where)
-        const query = `DELETE FROM ${schema ? `${schema}.` : ''}${table} ${whereQuery};`
+        const query = `DELETE FROM ${schema ? `\`${schema}\`.` : ''}\`${table}\` ${whereQuery};`
         return query
     }
     this.join = (join, defaultTable = null) => {
@@ -88,7 +88,7 @@ function QueryBuilder(schema) {
                 if ((!joinObject.table && !defaultTable) || !joinObject.on) {
                     return { join: null, joinColumns: null }
                 }
-                const from = `${joinObject.schema || schema ? `${joinObject.schema || schema}.` : ''}${joinObject.table || defaultTable}`
+                const from = `${joinObject.schema || schema ? `\`${joinObject.schema || schema}\`.` : ''}\`${joinObject.table || defaultTable}\``
                 const joinColumns = joinObject.select !== undefined && joinObject.select !== {} ? joinObject.select : null
                 const join = `${(joinObject.type || 'INNER').toUpperCase()} JOIN ${from} ON (${buildWhere(joinObject.on)})`
                 return { join, joinColumns }
@@ -115,7 +115,7 @@ function QueryBuilder(schema) {
                 return `${val} as ${key}`
             }).join(',')
         } else {
-            columns = `${table ? `${table}.` : ''}*`
+            columns = `${table ? `\`${table}\`.` : ''}*`
         }
 
         return columns
@@ -221,7 +221,7 @@ function QueryBuilder(schema) {
     function insertRow(table, row) {
         const columns = `(${Object.keys(row).join(',')})`
         const values = `(${Object.values(row).map(esc).join(',')})`
-        const query = `INSERT INTO ${schema ? `${schema}.` : ''}${table} ${columns} VALUES ${values};`
+        const query = `INSERT INTO ${schema ? `\`${schema}\`.` : ''}\`${table}\` ${columns} VALUES ${values};`
         return query
     }
 
