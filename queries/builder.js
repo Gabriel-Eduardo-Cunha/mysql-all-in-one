@@ -88,7 +88,7 @@ function QueryBuilder(schema) {
                 if ((!joinObject.table && !defaultTable) || !joinObject.on) {
                     return { join: null, joinColumns: null }
                 }
-                const from = `${joinObject.schema || schema ? `\`${joinObject.schema || schema}\`.` : ''}\`${joinObject.table || defaultTable}\``
+                const from = `${joinObject.schema || schema ? `\`${joinObject.schema || schema}\`.` : ''}\`${joinObject.table || defaultTable}\`${joinObject.alias !== undefined ? ` \`${joinObject.alias}\`` : ''}`
                 const joinColumns = joinObject.select !== undefined && joinObject.select !== {} ? joinObject.select : null
                 const join = `${(joinObject.type || 'INNER').toUpperCase()} JOIN ${from} ON (${buildWhere(joinObject.on)})`
                 return { join, joinColumns }
