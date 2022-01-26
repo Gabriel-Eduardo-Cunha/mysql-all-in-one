@@ -1,12 +1,8 @@
 {
   "name": "mysql-all-in-one",
-  "version": "1.0.13",
+  "version": "1.1.0",
   "description": "A package that allows you to have a complete interaction with a MYSQL database, allowing to connect to the database, retrieve data and create queries.",
   "main": "index.js",
-  "dependencies": {
-    "mysql": "2.18.1"
-  },
-  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -27,5 +23,13 @@
   "bugs": {
     "url": "https://github.com/Gabriel-Eduardo-Cunha/mysql-all-in-one/issues"
   },
-  "homepage": "https://github.com/Gabriel-Eduardo-Cunha/mysql-all-in-one#readme"
+  "homepage": "https://github.com/Gabriel-Eduardo-Cunha/mysql-all-in-one#readme",
+  "dependencies": {
+    "dbgate-query-splitter": "^4.6.0",
+    "mysql2": "2.3.3",
+    "mysqldump": "^3.2.0",
+    "read-file": "^0.2.0",
+    "single-line-string": "^0.0.2",
+    "uuid": "^8.3.2"
+  }
 }

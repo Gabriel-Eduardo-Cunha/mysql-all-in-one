@@ -1,5 +1,5 @@
 const { esc, isEmptyString } = require('./string_manipulator');
-const mysql = require('mysql')
+const mysql = require('mysql2')
 
 function QueryBuilder(schema) {
 

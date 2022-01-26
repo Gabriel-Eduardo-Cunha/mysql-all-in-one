@@ -1,4 +1,4 @@
-const mysql = require('mysql');
+const mysql = require('mysql2');
 
 module.exports = function(connection, schema) {
     this.QueryBuilder = new (require('../queries/builder'))(schema);
