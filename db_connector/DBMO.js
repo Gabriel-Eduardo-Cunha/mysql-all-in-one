@@ -90,7 +90,7 @@ module.exports = function (connectionData) {
 	}
 
 	this.runQueryTransaction = async (sql, database) => {
-		const backupPath = `${__dirname}\\..\\temp_backups\\backup-${uniqid()}.sql`
+		const backupPath = `${__dirname}\\..\\backup-${uniqid()}.sql`
 		await this.createBackup(database, backupPath)
 		try {
 			await this.runMultipleStatements(sql, database)
