@@ -8,10 +8,11 @@ module.exports = function(connection, schema) {
     this.setConnection = connection => {
         this.connection = connection
     }
-    this.createConnection = (...params) => {
-        this.connection = mysql.createConnection(...params)
+    this.createConnection = (connObject) => {
+        this.connection = mysql.createPool({
+            ...connObject,
+        })
     },
-
     this.setSchema = schema => {
         this.QueryBuilder.setSchema(schema)
     }
