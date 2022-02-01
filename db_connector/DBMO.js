@@ -40,7 +40,7 @@ module.exports = function (connectionData) {
 			},
 			dumpToFile: filePath,
 
-		}).catch(err => console.log(err));
+		})
 	}
 
 	this.execSqlAsync = (sql, connection, database) => {
