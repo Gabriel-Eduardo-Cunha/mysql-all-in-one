@@ -1,3 +1,4 @@
+// DAO = Data Access Object
 const mysql = require('mysql2');
 
 module.exports = function(connection, schema) {

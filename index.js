@@ -2,6 +2,7 @@ const mysql = require('mysql2');
 const QueryBuilder = require('./queries/builder');
 const MysqlDAO = require('./db_connector/DAO')
 const MysqlDBMO = require('./db_connector/DBMO')
+const DPPO = require('./db_connector/DPPO')
 
 module.exports = {
     connection: null,
@@ -24,6 +25,9 @@ module.exports = {
     },
     get MysqlDBMO() {
         return new MysqlDBMO(this.connection, this.connectionData)
+    },
+    get DPPO() {
+        return DPPO
     }
 }
 

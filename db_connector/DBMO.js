@@ -1,3 +1,5 @@
+// DBMO = Database Manipulator Object
+
 const mysql = require('mysql2');
 const mysqldump = require('mysqldump')
 const {splitQuery, mysqlSplitterOptions} = require('dbgate-query-splitter')
