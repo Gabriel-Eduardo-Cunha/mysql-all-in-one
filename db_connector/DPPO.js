@@ -9,11 +9,12 @@ module.exports = {
      * @param {Object} columnGroups object where keys will be column name and the value must be an array with the columns that should be in this group
      * @param {Object} opts
      * @param {boolean} opts.distincGroups no repeated values in columnGroups
+     * @param {boolean} opts.firstRow return the first row result
      * 
      */
     group(data, by, columnGroups, opts) {
         opts = opts || {}
-        return data.reduce((majorData, cur) => {
+        const resultSet = data.reduce((majorData, cur) => {
             if (cur[by] === undefined) return majorData;
             let index = majorData.findIndex(row => cur[by] === row[by])
             if (index === -1) {
@@ -36,5 +37,9 @@ module.exports = {
             })
             return majorData
         }, [])
+        if(opts.firstRow === true) {
+            return resultSet.length > 0 ? resultSet[0] : resultSet
+        }
+        return resultSet
     }
 }
