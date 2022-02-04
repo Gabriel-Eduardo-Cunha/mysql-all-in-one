@@ -10,6 +10,7 @@ module.exports = {
      * @param {Object} opts
      * @param {boolean} opts.distincGroups no repeated values in columnGroups
      * @param {boolean} opts.firstRow return the first row result
+     * @param {boolean} opts.noEmptyGroups no empty groups
      * 
      */
     group(data, by, columnGroups, opts) {
@@ -31,12 +32,23 @@ module.exports = {
                 columns.forEach(col => {
                     groupObject[col] = cur[col]
                 })
-                if(opts.distincGroups !== true || !_.find(majorData[index][key], o => _.isEqual(o, groupObject))) {
-                    majorData[index][key].push(groupObject)
+                if(!_.isEmpty(groupObject)) {
+                    if(opts.distincGroups !== true || !_.find(majorData[index][key], o => _.isEqual(o, groupObject))) {
+                        majorData[index][key].push(groupObject)
+                    }
                 }
             })
             return majorData
         }, [])
+        if(opts.noEmptyGroups === true) {
+            resultSet.map(row => {
+                Object.keys(columnGroups).forEach(groupName => {
+                    if(_.isEmpty(row[groupName])) {
+                        delete row[groupName]
+                    }
+                })
+            })
+        }
         if(opts.firstRow === true) {
             return resultSet.length > 0 ? resultSet[0] : resultSet
         }
