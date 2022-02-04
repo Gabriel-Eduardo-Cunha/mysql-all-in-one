@@ -32,7 +32,7 @@ module.exports = {
                 columns.forEach(col => {
                     groupObject[col] = cur[col]
                 })
-                if(!_.isEmpty(groupObject)) {
+                if(!Object.values(groupObject).every(v => _.isNil(v))) {
                     if(opts.distincGroups !== true || !_.find(majorData[index][key], o => _.isEqual(o, groupObject))) {
                         majorData[index][key].push(groupObject)
                     }
