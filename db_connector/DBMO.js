@@ -60,6 +60,21 @@ module.exports = function (connectionData) {
 		})
 	}
 
+	this.execSqlNoDbAsync = (sql) => {
+		const connection = mysql.createConnection({...this.connectionData})
+
+		return new Promise((resolve, reject) => {
+			connection.query(sql, (err, results) => {
+				if (err) {
+					reject(err)
+				} else {
+					resolve(results)
+				}
+			})
+		})
+
+	}
+
 	this.runMultipleStatements = (sql, database) => {
 		const statements = splitQuery(sql, mysqlSplitterOptions)
 		const pool = mysql.createPool({...this.connectionData, database})
@@ -82,7 +97,8 @@ module.exports = function (connectionData) {
 	}
 
 	this.emptyDatabase = async database => {
-		await this.runMultipleStatements(`DROP DATABASE IF EXISTS ${database};CREATE DATABASE IF NOT EXISTS ${database};`, database)
+		await this.execSqlNoDbAsync(`DROP DATABASE IF EXISTS ${database}`)
+		await this.execSqlNoDbAsync(`CREATE DATABASE IF NOT EXISTS ${database}`)
 	}
 
 	this.rollBack = async (database, backupPath) => {
