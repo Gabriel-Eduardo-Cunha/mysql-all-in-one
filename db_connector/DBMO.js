@@ -40,27 +40,62 @@ module.exports = function (connectionData) {
 		})
 	}
 
+	/**
+	 * @description Creates dump from database, it will use "mysqldump" shell command, make sure that "mysql.exe" is on the enviroment variables of your OS. This method will open a independent connection and close it after execution, use it wisely (running this in parallel will create an unlimited number of connections simultaneously, that may reach your server limit)
+	 * @param {String} filePath path to the .sql file
+	 * @param {String} database database selected during execution
+	 */
+	this.createBackupShellCommand = (database, filePath) => {
+		const { host, user, password } = this.connectionData
+		return new Promise((res, rej) => {
+			const callback = err => {
+				if (err) {
+					rej(err);
+				} else {
+					res()
+				}
+			}
+			if (password) {
+				exec(`mysqldump -h ${host} -u ${user} -p${password} ${database} > "${filePath}"`, callback)
+			} else {
+				exec(`mysqldump -h ${host} -u ${user} ${database} > "${filePath}"`, callback)
+			}
+		})
+	}
+
+	this.connQuery = (conn, query) => new Promise((res, rej) => {
+		conn.query(query, (err, results) => {
+			err ? rej(err) : res(results)
+		})
+	})
+
+	this.selectDatabase = async (conn, database) => {
+		if(database && typeof database === 'string') {
+			await this.connQuery(conn, `USE ${database}`)
+		} else {
+			const tempDb = `mysql_all_in_one${uniqid()}`.split('-').join('')
+			await this.connQuery(conn, `CREATE DATABASE ${tempDb}`)
+			await this.connQuery(conn, `USE ${tempDb}`)
+			await this.connQuery(conn, `DROP DATABASE ${tempDb}`)
+		}
+	}
+
 	this.execStatement = (statement, database) => {
 		return new Promise((resolve, reject) => {
-			this.pool.getConnection((connErr, conn) => {
+			this.pool.getConnection(async (connErr, conn) => {
 				if (connErr) {
 					conn.release()
 					reject(connErr)
 				} else {
-					conn.changeUser({database}, userErr => {
-						if(userErr) {
+					await this.selectDatabase(conn, database)
+					conn.query(statement, (queryErr, results) => {
+						if (queryErr) {
 							conn.release()
-							reject(userErr);
+							reject(queryErr)
+						} else {
+							conn.release()
+							resolve(results)
 						}
-						conn.query(statement, (queryErr, results) => {
-							if (queryErr) {
-								conn.release()
-								reject(queryErr)
-							} else {
-								conn.release()
-								resolve(results)
-							}
-						})
 					})
 				}
 			})
@@ -68,10 +103,9 @@ module.exports = function (connectionData) {
 	}
 
 	/**
-	 * @description Executes sql from .sql file, it will use "mysql" cmd command, make sure that it is onde enviroment variables of your OS. This method will open a independent connection and close it after execution, use it wisely (running this in parallel will create an unlimited number of connections simultaneously, that may reach your server limit)
+	 * @description Executes sql from .sql file, it will use "mysql" shell command, make sure that "mysql.exe" is on the enviroment variables of your OS. This method will open a independent connection and close it after execution, use it wisely (running this in parallel will create an unlimited number of connections simultaneously, that may reach your server limit)
 	 * @param {String} filePath path to the .sql file
 	 * @param {String} database database selected during execution
-	 * @returns 
 	 */
 	this.execSqlFromFile = async (filePath, database) => {
 		const { host, user, password } = this.connectionData
@@ -98,7 +132,7 @@ module.exports = function (connectionData) {
 	 * @param {Object} options 
 	 * @param {Boolean} options.runUnordered (default false) if set to TRUE the statements will be executed in parallel, order may be compromised, but will be considerably faster.
 	 */
-	this.runMultipleStatements = async (sql, database, options) => {
+	this.runMultipleStatements = async (sql, database, options={}) => {
 		const statements = splitQuery(sql, mysqlSplitterOptions)
 		if(options.runUnordered === true) {
 			await Promise.all(statements.map(statement => this.execStatement(statement, database)))
@@ -115,7 +149,7 @@ module.exports = function (connectionData) {
 	 */
 	this.emptyDatabase = async database => {
 		await this.execStatement(`DROP DATABASE IF EXISTS ${database};`)
-		await this.execStatement(`CREATE DATABASE IF NOT EXISTS ${database};`)
+		await this.execStatement(`CREATE DATABASE ${database};`)
 	}
 
 	this.rollBack = async (database, dumpFile) => {
@@ -131,12 +165,15 @@ module.exports = function (connectionData) {
 	 */
 	this.runQueryTransaction = async (sql, database) => {
 		const backupPath = path.join(__dirname, '..', `backup-${uniqid()}.sql`)
-		await this.createBackup(database, backupPath)
+		const backupPromise = this.createBackup(database, backupPath)
 		try {
 			await this.runMultipleStatements(sql, database)
-			fs.unlinkSync(backupPath)
+			backupPromise.then(() => {
+				fs.unlinkSync(backupPath)
+			})
 			return true
 		} catch (err) {
+			await backupPromise
 			await this.rollBack(database, backupPath)
 			fs.unlinkSync(backupPath)
 			throw err
@@ -145,12 +182,15 @@ module.exports = function (connectionData) {
 
 	this.runQueryTransactionFromFile = async (filePath, database) => {
 		const backupPath = path.join(__dirname, '..', `backup-${uniqid()}.sql`)
-		await this.createBackup(database, backupPath)
+		const backupPromise = this.createBackup(database, backupPath)
 		try {
 			await this.execSqlFromFile(filePath, database)
-			fs.unlinkSync(backupPath)
+			backupPromise.then(() => {
+				fs.unlinkSync(backupPath)
+			})
 			return true
 		} catch (err) {
+			await backupPromise
 			await this.rollBack(database, backupPath)
 			fs.unlinkSync(backupPath)
 			throw err

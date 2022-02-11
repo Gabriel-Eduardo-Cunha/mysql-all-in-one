@@ -1,6 +1,6 @@
 {
   "name": "mysql-all-in-one",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "A package that allows you to have a complete interaction with a MYSQL database, allowing to connect to the database, retrieve data and create queries.",
   "main": "index.js",
   "scripts": {

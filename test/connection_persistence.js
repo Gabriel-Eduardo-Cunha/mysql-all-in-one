@@ -1,5 +1,6 @@
 const {MysqlDBMO: dbmo, QueryBuilder} = require('../index')
 const path = require('path')
+const {v4: uniqid} = require('uuid')
 
 dbmo.setConnectionData({
     host: "localhost",
@@ -7,13 +8,16 @@ dbmo.setConnectionData({
     password: "",
 })
 
-console.time('test')
-dbmo.execSqlFromFile(path.join(__dirname, 'inserts.sql'), 'ambisistest').then(() => {
-    console.timeEnd('test')
-    
-})
-dbmo.
-dbmo.execSqlFromFile(path.join(__dirname, 'inserts.sql'), 'ambisistest')
-dbmo.execSqlFromFile(path.join(__dirname, 'inserts.sql'), 'ambisistest')
-dbmo.execSqlFromFile(path.join(__dirname, 'inserts.sql'), 'ambisistest')
+const asyncFunc = async () => {
+    for (let i = 0; i < 10; i++) {
+        console.time(`test${i}`)
+        dbmo.createBackup('ambisistest', `./backup2${uniqid()}.sql`).then(() => {
+            console.timeEnd(`test${i}`)
+        })
+    }
+    dbmo.runMultipleStatements(`show processlist;show processlist;show processlist;`, 'ambisis02')
+}
+asyncFunc()
+
+
 
