@@ -4,22 +4,25 @@ const mysql = require('mysql2');
 module.exports = function(connection, schema) {
     this.QueryBuilder = new (require('../queries/builder'))(schema);
 
-    this.connection = connection
+    this.connPool = connection
 
     this.setConnection = connection => {
-        this.connection = connection
+        this.connPool = connection
     }
-    this.createConnection = (connObject) => {
-        this.connection = mysql.createPool({
-            ...connObject,
-        })
+    /**
+     * 
+     * @param {mysql.PoolOptions} connObject table to select
+     * 
+     */
+    this.createConnection = connObject => {
+        this.connPool = mysql.createPool(connObject)
     },
     this.setSchema = schema => {
         this.QueryBuilder.setSchema(schema)
     }
 
     /**
-     * Select data from table and return the dataset
+     * @description Select data from table and return the dataset
      * @param {String} table table to select
      * @param {Object} select Object with select structure
      * @return {Promise} rows with the results
@@ -30,7 +33,7 @@ module.exports = function(connection, schema) {
     }
 
     /**
-     * Select data from table and return the first row
+     * @description Select data from table and return the first row
      * @param {String} table table to select
      * @param {Object} select Object with select structure
      * @return {Promise} result row
@@ -41,7 +44,7 @@ module.exports = function(connection, schema) {
     }
 
     /**
-     * Select data from table and return all the column values
+     * @description Select data from table and return all the column values
      * @param {String} table table to select
      * @param {Object} select Object with select structure
      * @param {String} column column name that will be selected, if null will use the first column
@@ -56,7 +59,7 @@ module.exports = function(connection, schema) {
     }
 
     /**
-     * Select data from table and return a value of the first row
+     * @description Select data from table and return a value of the first row
      * @param {String} table table to select
      * @param {Object} select Object with select structure
      * @param {(String)} value name of the column to return, if null will use first column
@@ -72,7 +75,7 @@ module.exports = function(connection, schema) {
     }
 
     /**
-     * Insert one or multiple rows into a table, and return the last ID inserted.
+     * @description Insert one or multiple rows into a table, and return the last ID inserted.
      * @param {String} table table to insert
      * @param {(Array|Object)} rows rows or row to insert
      * @param {boolean} returnAllIds if true will return all IDs inserted (Be careful, that's much slower when inserting too many rows).
@@ -87,7 +90,7 @@ module.exports = function(connection, schema) {
     }
 
     /**
-     * Deletes data from table
+     * @description Deletes data from table
      * @param {String} table table to delete from
      * @param {(String|Array|Object)} where Where to apply the delete filter
      * @return {Promise} Promise of the last ID inserted.
@@ -98,7 +101,7 @@ module.exports = function(connection, schema) {
     }
 
     /**
-     *  Updates data from table
+     * @description Updates data from table
      * @param {String} table table to update
      * @param {(String|Array|Object)} data 
      * @param {(String|Array|Object)} where 
@@ -110,7 +113,7 @@ module.exports = function(connection, schema) {
     }
 
     /**
-     * Does an update if row contains any identifier, otherwise inserts a new row
+     * @description Does an update if row contains any identifier, otherwise inserts a new row
      * @param {String} table table to update or insert
      * @param {Object} row row to update or insert
      * @param {(String|Array)} identifiers String or Array of strings containing the identifier keys
@@ -142,20 +145,29 @@ module.exports = function(connection, schema) {
 
     /**
      * 
-     * @param {String} query table to update
+     * @param {String} statement table to update
      * @param {function} callback function(result) => receives the result before returning the function
      * @return {Promise} Result from query 
      */
-    this.execQuery = (query, callback = r => r) => {
-        if(this.connection === null) throw "No connection, please use method setConnection or createConnection.";
+    this.execQuery = (statement, callback = r => r) => {
         return new Promise((resolve, reject) => {
-            this.connection.query(query, (err, results) => {
-                if(err) {
-                    reject(err)
-                } else {
-                    resolve(callback(results))
-                }
-            })
-        })
+			this.connPool.getConnection((connErr, conn) => {
+				if (connErr) {
+					conn.release()
+					reject(connErr)
+				} else {				
+                    conn.query(statement, (queryErr, results) => {
+                        if (queryErr) {
+                            conn.release()
+                            reject(queryErr)
+                        } else {
+                            conn.release()
+                            resolve(callback(results))
+                        }
+                    })
+					
+				}
+			})
+		})
     }
 }

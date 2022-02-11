@@ -2,9 +2,8 @@
 const _ = require('lodash')
 
 module.exports = {
-    /**
-     * @description
-     * Group data in a useful way when doing multiple joins that create duplicate collumns
+    /** Data group
+     * @description Group data in a useful way when doing multiple joins that create duplicate columns
      * @param {Array} data array of objects to be grouped
      * @param {Object} columnGroups object where keys will be column name and the value must be an array with the columns that should be in this group
      * @param {Object} opts
