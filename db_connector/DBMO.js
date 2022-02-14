@@ -17,7 +17,14 @@ module.exports = function (connectionData) {
 		this.pool = mysql.createPool(connectionData)
 	}
 
-	this.createBackup = async (database, filePath) => {
+	/**
+	 * 
+	 * @param {String} database 
+	 * @param {String} filePath 
+	 * @param {Object} opts 
+	 * @param {Number} opts.maxRowsPerInsertStatement max rows inserted at once per insert statement (default 10), small numbers are slower to execute but are more safe to memory leaks on the MySQL Server.
+	 */
+	this.createBackup = async (database, filePath, opts={}) => {
 		await mysqldump({
 			connection: {
 				...this.connectionData,
@@ -29,7 +36,7 @@ module.exports = function (connectionData) {
 				},
 				data: {
 					format: false,
-					maxRowsPerInsertStatement: 1000
+					maxRowsPerInsertStatement: opts.maxRowsPerInsertStatement || 10
 				},
 				schema: {
 					format: false
@@ -84,7 +91,6 @@ module.exports = function (connectionData) {
 		return new Promise((resolve, reject) => {
 			this.pool.getConnection(async (connErr, conn) => {
 				if (connErr) {
-					conn.release()
 					reject(connErr)
 				} else {
 					await this.selectDatabase(conn, database)
@@ -195,7 +201,7 @@ module.exports = function (connectionData) {
 	 * @param {String} opts.backupPath If defined, the backup will be saved on the specified path and won't be deleted once the operation is completed
 	 * @returns {boolean||Error} true if success, object error otherwise
 	 */
-	this.runQueryTransaction = async (sql, database) => {
+	this.runQueryTransaction = async (sql, database, opts={}) => {
 		const backupPath = opts.backupPath !== undefined && typeof opts.backupPath === 'string' ? opts.backupPath : path.join(__dirname, '..', `backup-${uniqid()}.sql`)
 		await this.createBackup(database, backupPath)
 		try {
@@ -219,11 +225,12 @@ module.exports = function (connectionData) {
 	 * @param {String} database Database selected during the execution
 	 * @param {Object} opts 
 	 * @param {String} opts.backupPath If defined, the backup will be saved on the specified path and won't be deleted once the operation is completed
+	 * @param {String} opts.backupOpts Opts to pass to createBackup function
 	 * @returns {boolean||Error} true if success, object error otherwise
 	 */
 	this.runQueryTransactionFromFile = async (filePath, database, opts={}) => {
 		const backupPath = opts.backupPath !== undefined && typeof opts.backupPath === 'string' ? opts.backupPath : path.join(__dirname, '..', `backup-${uniqid()}.sql`)
-		await this.createBackup(database, backupPath)
+		await this.createBackup(database, backupPath, opts.backupOpts || {})
 		try {
 			await this.execSqlFromFile(filePath, database)
 			if(!(opts.backupPath !== undefined && typeof opts.backupPath === 'string')) {
