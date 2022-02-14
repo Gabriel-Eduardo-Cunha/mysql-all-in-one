@@ -188,34 +188,53 @@ module.exports = function (connectionData) {
 
 	/**
 	 * 
-	 * @param {String} sql 
-	 * @param {String} database 
+	 * @description Will create a backup before executing the sql, in case of any error, the backup is restored and the error is thrown
+	 * @param {String} filePath Path to the .sql file containing the query to be executed
+	 * @param {String} database Database selected during the execution
+	 * @param {Object} opts 
+	 * @param {String} opts.backupPath If defined, the backup will be saved on the specified path and won't be deleted once the operation is completed
 	 * @returns {boolean||Error} true if success, object error otherwise
 	 */
 	this.runQueryTransaction = async (sql, database) => {
-		const backupPath = path.join(__dirname, '..', `backup-${uniqid()}.sql`)
+		const backupPath = opts.backupPath !== undefined && typeof opts.backupPath === 'string' ? opts.backupPath : path.join(__dirname, '..', `backup-${uniqid()}.sql`)
 		await this.createBackup(database, backupPath)
 		try {
 			await this.runMultipleStatements(sql, database)
-			fs.unlink(backupPath, err => {if(err) throw err})
+			if(!(opts.backupPath !== undefined && typeof opts.backupPath === 'string')) {
+				fs.unlink(backupPath, err => {if(err) throw err})
+			}
 			return true
 		} catch (err) {
 			await this.rollBack(database, backupPath)
-			fs.unlink(backupPath, err => {if(err) throw err})
+			if(!(opts.backupPath !== undefined && typeof opts.backupPath === 'string')) {
+				fs.unlink(backupPath, err => {if(err) throw err})
+			}
 			throw err
 		}
 	}
 
-	this.runQueryTransactionFromFile = async (filePath, database) => {
-		const backupPath = path.join(__dirname, '..', `backup-${uniqid()}.sql`)
+	/**
+	 * @description Will create a backup before executing the sql, in case of any error, the backup is restored and the error is thrown
+	 * @param {String} filePath Path to the .sql file containing the query to be executed
+	 * @param {String} database Database selected during the execution
+	 * @param {Object} opts 
+	 * @param {String} opts.backupPath If defined, the backup will be saved on the specified path and won't be deleted once the operation is completed
+	 * @returns {boolean||Error} true if success, object error otherwise
+	 */
+	this.runQueryTransactionFromFile = async (filePath, database, opts={}) => {
+		const backupPath = opts.backupPath !== undefined && typeof opts.backupPath === 'string' ? opts.backupPath : path.join(__dirname, '..', `backup-${uniqid()}.sql`)
 		await this.createBackup(database, backupPath)
 		try {
 			await this.execSqlFromFile(filePath, database)
-			fs.unlink(backupPath)
+			if(!(opts.backupPath !== undefined && typeof opts.backupPath === 'string')) {
+				fs.unlink(backupPath, err => {if(err) throw err})
+			}
 			return true
 		} catch (err) {
 			await this.rollBack(database, backupPath)
-			fs.unlink(backupPath)
+			if(!(opts.backupPath !== undefined && typeof opts.backupPath === 'string')) {
+				fs.unlink(backupPath, err => {if(err) throw err})
+			}
 			throw err
 		}
 	}
