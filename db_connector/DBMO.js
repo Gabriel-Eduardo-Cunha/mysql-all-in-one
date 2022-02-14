@@ -143,6 +143,35 @@ module.exports = function (connectionData) {
 		}
 	}
 
+	this.runMultipleStatementsInsideTransaction = async (sql, database) => {
+		const statements = splitQuery(sql, mysqlSplitterOptions)
+		return new Promise((res, rej) => {
+			this.pool.getConnection((err, conn) => {
+				if(err) rej(err);
+				conn.beginTransaction(async beginErr => {
+					if(beginErr) rej(beginErr);
+					try {
+						await this.selectDatabase(conn, database)
+						for (const statement of statements) {
+							await this.connQuery(conn, statement)
+						}
+						
+						conn.commit(commitErr => {
+							if(commitErr) {
+								rej(commitErr);
+							} else {
+								res(true);
+							}
+						})
+					} catch (queryErr) {
+						conn.rollback()
+						rej(queryErr)
+					}
+				})
+			})
+		})
+	}
+
 	/**
 	 * @description Will drop and recreate the database
 	 * @param {String} database database to empty
@@ -165,34 +194,28 @@ module.exports = function (connectionData) {
 	 */
 	this.runQueryTransaction = async (sql, database) => {
 		const backupPath = path.join(__dirname, '..', `backup-${uniqid()}.sql`)
-		const backupPromise = this.createBackup(database, backupPath)
+		await this.createBackup(database, backupPath)
 		try {
 			await this.runMultipleStatements(sql, database)
-			backupPromise.then(() => {
-				fs.unlinkSync(backupPath)
-			})
+			fs.unlink(backupPath, err => {if(err) throw err})
 			return true
 		} catch (err) {
-			await backupPromise
 			await this.rollBack(database, backupPath)
-			fs.unlinkSync(backupPath)
+			fs.unlink(backupPath, err => {if(err) throw err})
 			throw err
 		}
 	}
 
 	this.runQueryTransactionFromFile = async (filePath, database) => {
 		const backupPath = path.join(__dirname, '..', `backup-${uniqid()}.sql`)
-		const backupPromise = this.createBackup(database, backupPath)
+		await this.createBackup(database, backupPath)
 		try {
 			await this.execSqlFromFile(filePath, database)
-			backupPromise.then(() => {
-				fs.unlinkSync(backupPath)
-			})
+			fs.unlink(backupPath)
 			return true
 		} catch (err) {
-			await backupPromise
 			await this.rollBack(database, backupPath)
-			fs.unlinkSync(backupPath)
+			fs.unlink(backupPath)
 			throw err
 		}
 	}
