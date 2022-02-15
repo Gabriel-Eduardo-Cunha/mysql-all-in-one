@@ -108,3 +108,4 @@ dist
 
 # Custom
 temp_backups/
+test/backuptest.sql

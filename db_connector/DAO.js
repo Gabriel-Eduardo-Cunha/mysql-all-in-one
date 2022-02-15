@@ -153,7 +153,6 @@ module.exports = function(connection, schema) {
         return new Promise((resolve, reject) => {
 			this.connPool.getConnection((connErr, conn) => {
 				if (connErr) {
-					conn.release()
 					reject(connErr)
 				} else {				
                     conn.query(statement, (queryErr, results) => {
