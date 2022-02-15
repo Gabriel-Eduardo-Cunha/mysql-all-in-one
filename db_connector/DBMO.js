@@ -95,11 +95,10 @@ module.exports = function (connectionData) {
 				} else {
 					await this.selectDatabase(conn, database)
 					conn.query(statement, (queryErr, results) => {
+						conn.release()
 						if (queryErr) {
-							conn.release()
 							reject(queryErr)
 						} else {
-							conn.release()
 							resolve(results)
 						}
 					})
