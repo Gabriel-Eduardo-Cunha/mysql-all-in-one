@@ -6,8 +6,11 @@ const data = [
     {id: 1, name: 'to', foo_name: 'foo2', foo_age: 35, bar_name: 'bar1', bar_age: 2},
     {id: 1, name: 'to', foo_name: 'foo1', foo_age: 10, bar_name: 'bar2', bar_age: 4},
     {id: 1, name: 'to', foo_name: 'foo2', foo_age: 35, bar_name: 'bar2', bar_age: 4},
-    {id: 2, name: 'rober', foo_name: 'foo3', foo_age: 13, bar_name: 'bar3', bar_age: 34},
-    {id: 2, name: 'rober', foo_name: 'foo3', foo_age: 13, bar_name: 'bar4', bar_age: 37},
+    {id: 1, name: 'to', foo_name: 'foo1', foo_age: 10, bar_name: 'bar3', bar_age: 6},
+    {id: 1, name: 'to', foo_name: 'foo2', foo_age: 35, bar_name: 'bar3', bar_age: 6},
+    {id: 1, name: 'to', foo_name: 'foo1', foo_age: 11, bar_name: 'bar1', bar_age: 2},
+    {id: 1, name: 'to', foo_name: 'foo1', foo_age: 11, bar_name: 'bar2', bar_age: 4},
+    {id: 1, name: 'to', foo_name: 'foo1', foo_age: 11, bar_name: 'bar3', bar_age: 6},
 ]
 
 const result = dppo.group(data, 'id', {
@@ -15,7 +18,7 @@ const result = dppo.group(data, 'id', {
     bars: ['bar_name', 'bar_age'],
 }, { distincGroups: true })
 
-console.log(result);
+console.log(result[0]);
 
 
 
