@@ -1,35 +1,35 @@
 {
-  "name": "mysql-all-in-one",
-  "version": "1.5.0",
-  "description": "A package that allows you to have a complete interaction with a MYSQL database, allowing to connect to the database, retrieve data and create queries.",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Gabriel-Eduardo-Cunha/mysql-all-in-one.git"
-  },
-  "keywords": [
-    "mysql",
-    "database",
-    "query",
-    "data-access-object",
-    "DAO",
-    "connection"
-  ],
-  "author": "gabriel_eduardo_cunha",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/Gabriel-Eduardo-Cunha/mysql-all-in-one/issues"
-  },
-  "homepage": "https://github.com/Gabriel-Eduardo-Cunha/mysql-all-in-one#readme",
-  "dependencies": {
-    "dbgate-query-splitter": "4.6.0",
-    "lodash": "4.17.21",
-    "mysql2": "2.3.3",
-    "mysqldump": "3.2.0",
-    "single-line-string": "0.0.2",
-    "uuid": "8.3.2"
-  }
+	"name": "mysql-all-in-one",
+	"version": "1.5.1",
+	"description": "A package that allows you to have a complete interaction with a MYSQL database, allowing to connect to the database, retrieve data and create queries.",
+	"main": "index.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/Gabriel-Eduardo-Cunha/mysql-all-in-one.git"
+	},
+	"keywords": [
+		"mysql",
+		"database",
+		"query",
+		"data-access-object",
+		"DAO",
+		"connection"
+	],
+	"author": "gabriel_eduardo_cunha",
+	"license": "ISC",
+	"bugs": {
+		"url": "https://github.com/Gabriel-Eduardo-Cunha/mysql-all-in-one/issues"
+	},
+	"homepage": "https://github.com/Gabriel-Eduardo-Cunha/mysql-all-in-one#readme",
+	"dependencies": {
+		"dbgate-query-splitter": "4.6.0",
+		"lodash": "4.17.21",
+		"mysql2": "2.3.3",
+		"mysqldump": "3.2.0",
+		"single-line-string": "0.0.2",
+		"uuid": "8.3.2"
+	}
 }

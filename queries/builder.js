@@ -273,8 +273,10 @@ function QueryBuilder(schema) {
 			'<',
 			'!=',
 			'LIKE',
-			'IS',
+			'RLIKE',
 			'NOT_LIKE',
+			'NOT_RLIKE',
+			'IS',
 			'IS_NOT',
 		];
 		for (const operation of operators) {
