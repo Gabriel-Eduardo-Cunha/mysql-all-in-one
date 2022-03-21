@@ -52,7 +52,7 @@ module.exports = function (connectionData) {
 	 * @param {String} database database selected during execution
 	 */
 	this.createBackupShellCommand = (database, filePath) => {
-		const { host, user, password } = this.connectionData;
+		const { host, user, password, port } = this.connectionData;
 		return new Promise((res, rej) => {
 			const callback = (err) => {
 				if (err) {
@@ -61,17 +61,12 @@ module.exports = function (connectionData) {
 					res();
 				}
 			};
-			if (password) {
-				exec(
-					`mysqldump -h ${host} -u ${user} -p${password} ${database} > "${filePath}"`,
-					callback
-				);
-			} else {
-				exec(
-					`mysqldump -h ${host} -u ${user} ${database} > "${filePath}"`,
-					callback
-				);
-			}
+			exec(
+				`mysqldump -h ${host}${port ? `:${port}` : ''} -u ${user}${
+					password ? ` -p${password}` : ''
+				} ${database} > "${filePath}"`,
+				callback
+			);
 		});
 	};
 
@@ -119,7 +114,7 @@ module.exports = function (connectionData) {
 	 * @param {String} database database selected during execution
 	 */
 	this.execSqlFromFile = async (filePath, database) => {
-		const { host, user, password } = this.connectionData;
+		const { host, user, password, port } = this.connectionData;
 		return new Promise((res, rej) => {
 			const callback = (err) => {
 				if (err) {
@@ -128,17 +123,12 @@ module.exports = function (connectionData) {
 					res();
 				}
 			};
-			if (password) {
-				exec(
-					`mysql -h ${host} -u ${user} -p${password} ${database} <"${filePath}"`,
-					callback
-				);
-			} else {
-				exec(
-					`mysql -h ${host} -u ${user} ${database} <"${filePath}"`,
-					callback
-				);
-			}
+			exec(
+				`mysql -h ${host}${port ? `:${port}` : ''} -u ${user}${
+					password ? ` -p${password}` : ''
+				} ${database} <"${filePath}"`,
+				callback
+			);
 		});
 	};
 
