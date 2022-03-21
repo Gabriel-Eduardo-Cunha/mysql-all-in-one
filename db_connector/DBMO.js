@@ -62,7 +62,7 @@ module.exports = function (connectionData) {
 				}
 			};
 			exec(
-				`mysqldump -h ${host}${port ? `:${port}` : ''} -u ${user}${
+				`mysqldump -h ${host}${port ? ` -P ${port}` : ''} -u ${user}${
 					password ? ` -p${password}` : ''
 				} ${database} > "${filePath}"`,
 				callback
@@ -124,7 +124,7 @@ module.exports = function (connectionData) {
 				}
 			};
 			exec(
-				`mysql -h ${host}${port ? `:${port}` : ''} -u ${user}${
+				`mysql -h ${host}${port ? ` -P ${port}` : ''} -u ${user}${
 					password ? ` -p${password}` : ''
 				} ${database} <"${filePath}"`,
 				callback
