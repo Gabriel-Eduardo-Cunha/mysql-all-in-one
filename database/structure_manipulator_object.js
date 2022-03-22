@@ -1,4 +1,4 @@
-// DBMO = Database Manipulator Object
+// SMO = Structure Manipulator Object
 
 const mysql = require('mysql2');
 const mysqldump = require('mysqldump');

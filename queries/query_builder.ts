@@ -1,6 +1,169 @@
-const { esc, isEmptyString } = require('./string_manipulator');
-const mysql = require('mysql2');
+import mysql from 'mysql2';
 
+const escape = mysql.escape;
+
+/**
+ * Escapes a value into a valid mysql String representation
+ */
+export const escVal = escape;
+
+/**
+ * Tagged template literal function to escape all passed values
+ * Example:
+ * 	const name = 'Foo'
+ * 	escStr`name = ${name}`
+ * > name = 'Foo'
+ */
+export const escStr = (
+	[firstStr, ...rest]: Array<String>,
+	...values: Array<any>
+) => rest.reduce((acc, cur, i) => `${acc}${escape(values[i])}${cur}`, firstStr);
+
+const escapeKey = (key: String) =>
+	key
+		.split('.')
+		.map((v) => `\`${v}\``)
+		.join('.');
+
+interface ConditionObject {
+	/**
+	 * If TRUE will use OR between conditions, will use AND otherwise. Default FALSE
+	 */
+	__or: boolean;
+	/**
+	 *
+	 */
+	[key: string]: OperatorOptionsType;
+}
+/**
+ * If first value is equal to "__or" will use OR between conditions.
+ */
+interface ConditionOptionsArray {
+	[index: number]: String | ConditionObject | Array<ConditionOptionsArray>;
+}
+
+interface OperatorOptionsObject {
+	like?: string;
+	notlike?: string;
+	rlike?: string;
+	notrlike?: string;
+	between?: Array<any>;
+	notbetween?: Array<any>;
+	in?: Array<any>;
+	notin?: Array<any>;
+	'>'?: any;
+	'<'?: any;
+	'>='?: any;
+	'<='?: any;
+	'<>'?: any;
+	'!='?: any;
+	'='?: any;
+}
+
+type OperatorOptionsType =
+	| OperatorOptionsObject
+	| String
+	| number
+	| Date
+	| null
+	| boolean
+	| Array<String | number | Date>;
+
+type ConditionOptions = String | ConditionOptionsArray | ConditionObject;
+
+const create_conditions = (value: ConditionOptions): String => {
+	let isAnd = true;
+	if (Array.isArray(value)) {
+		if (value.length > 0 && value[0] === '__or') {
+			value.shift();
+			isAnd = false;
+		}
+		return value.map(create_conditions).join(isAnd ? ' AND ' : ' OR ');
+	}
+	if (typeof value === 'string') return value;
+	if (typeof value !== 'object') throw 'value must be String or Object type';
+	const operation = (val: OperatorOptionsObject | any) => {
+		if (val === undefined) return;
+		if (Array.isArray(val)) return `IN (${val.map(escape).join(',')})`;
+		if (typeof val === 'object') {
+			const {
+				like,
+				notlike,
+				rlike,
+				notrlike,
+				between,
+				notbetween,
+				in: inOperator,
+				notin,
+				'>': greaterThan,
+				'<': smallerThan,
+				'<>': different,
+				'!=': notEqual,
+				'>=': greatherOrEqual,
+				'<=': smallerOrEqual,
+				'=': equal,
+			} = val;
+			if (like !== undefined) return `LIKE ${escape(like)}`;
+			if (notlike !== undefined) return `NOT LIKE ${escape(like)}`;
+			if (rlike !== undefined) return `RLIKE ${escape(like)}`;
+			if (notrlike !== undefined) return `NOT RLIKE ${escape(like)}`;
+			if (
+				between !== undefined &&
+				Array.isArray(between) &&
+				between.length === 2
+			)
+				return `BETWEEN ${escape(between[0])} AND ${escape(
+					between[1]
+				)}`;
+			if (
+				notbetween !== undefined &&
+				Array.isArray(notbetween) &&
+				notbetween.length === 2
+			)
+				return `NOT BETWEEN ${escape(notbetween[0])} AND ${escape(
+					notbetween[1]
+				)}`;
+			if (inOperator !== undefined && Array.isArray(inOperator))
+				return `IN (${escape(inOperator)})`;
+			if (notin !== undefined && Array.isArray(notin))
+				return `NOT IN (${escape(notin)})`;
+			if (greaterThan !== undefined) return `> ${escape(greaterThan)}`;
+			if (smallerThan !== undefined) return `< ${escape(smallerThan)}`;
+			if (different !== undefined) return `<> ${escape(different)}`;
+			if (notEqual !== undefined) return `<> ${escape(notEqual)}`;
+			if (greatherOrEqual !== undefined)
+				return `>= ${escape(greatherOrEqual)}`;
+			if (smallerOrEqual !== undefined)
+				return `<= ${escape(smallerOrEqual)}`;
+			if (equal !== undefined) return `= ${escape(smallerOrEqual)}`;
+			return;
+		}
+		if (val === null || val === true || val === false)
+			return `IS ${escape(value)}`;
+		return `= ${escape(val)}`;
+	};
+	if ('__or' in value) {
+		delete value['__or'];
+		isAnd = false;
+	}
+	return Object.entries(value)
+		.map(([key, val]) => {
+			console.log(operation(val));
+
+			const operationResult = operation(val);
+			return val === undefined && operationResult
+				? val
+				: `${escapeKey(key)} ${operationResult}`;
+		})
+		.filter((v) => v !== undefined)
+		.join(isAnd ? ' AND ' : ' OR ');
+};
+
+export const where = (opts: ConditionOptions) => {
+	return `WHERE ${create_conditions(opts)}`;
+};
+
+/*
 function QueryBuilder(schema) {
 	this.format = (...args) => mysql.format(...args);
 
@@ -80,7 +243,7 @@ function QueryBuilder(schema) {
 					(row) =>
 						`(${columns
 							.map((column) => row[column])
-							.map(esc)
+							.map(escape)
 							.join(',')})`
 				)
 				.join(',');
@@ -91,7 +254,7 @@ function QueryBuilder(schema) {
 			rows !== null
 		) {
 			columns = `${Object.keys(rows).join(',')}`;
-			values = `(${Object.values(rows).map(esc).join(',')})`;
+			values = `(${Object.values(rows).map(escape).join(',')})`;
 		} else {
 			return null;
 		}
@@ -240,7 +403,7 @@ function QueryBuilder(schema) {
 				} else if (typeof value === 'string' && value !== '') {
 					return buildCondition(key, value);
 				} else if (Array.isArray(value)) {
-					return `${key} IN (${value.map(esc).join(',')})`;
+					return `${key} IN (${value.map(escape).join(',')})`;
 				} else if (value === null) {
 					return `${key} IS NULL`;
 				} else if (value === '') {
@@ -290,7 +453,7 @@ function QueryBuilder(schema) {
 				break;
 			}
 		}
-		return `${key} ${operator} ${esc(value)}`;
+		return `${key} ${operator} ${escape(value)}`;
 	}
 
 	function buildSet(data) {
@@ -301,7 +464,7 @@ function QueryBuilder(schema) {
 			columnSets = data.join(',');
 		} else if (typeof data === 'object' && data !== null) {
 			columnSets = Object.entries(data)
-				.map(([key, value]) => `${key} = ${esc(value)}`)
+				.map(([key, value]) => `${key} = ${escape(value)}`)
 				.join(',');
 		} else {
 			return '';
@@ -310,5 +473,4 @@ function QueryBuilder(schema) {
 		return set;
 	}
 }
-
-module.exports = QueryBuilder;
+*/
