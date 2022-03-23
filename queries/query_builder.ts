@@ -11,35 +11,58 @@ export const escVal = escape;
  * Tagged template literal function to escape all passed values
  * Example:
  * 	const name = 'Foo'
- * 	escStr`name = ${name}`
+ * 	escStr\`name = ${name}\`
  * > name = 'Foo'
  */
 export const escStr = (
-	[firstStr, ...rest]: Array<String>,
+	[firstStr, ...rest]: TemplateStringsArray,
 	...values: Array<any>
-) => rest.reduce((acc, cur, i) => `${acc}${escape(values[i])}${cur}`, firstStr);
+): String =>
+	rest.reduce((acc, cur, i) => `${acc}${escape(values[i])}${cur}`, firstStr);
 
-const escapeKey = (key: String) =>
+const escapeNames = (key: String) =>
 	key
-		.split('.')
-		.map((v) => `\`${v}\``)
-		.join('.');
+		.trim()
+		.replace(/ +/g, ' ')
+		.replace(' as ', ' ')
+		.replace(' AS ', ' ')
+		.split(' ')
+		.map((val) =>
+			val
+				.split('.')
+				.map((v) => `\`${v}\``)
+				.join('.')
+		)
+		.join(' ');
 
-interface ConditionObject {
+/**
+ *
+ * @param tableRef
+ * @returns [table, alias]
+ */
+const extractTableAlias = (tableRef: string): Array<string> => {
+	const split = tableRef.split(' ');
+	if (split.length !== 2) return [tableRef, tableRef];
+	return [split[0], split[1]];
+};
+
+interface ConditionOperatorInterface {
+	[key: string]: OperatorOptionsType;
+}
+interface ConditionAndOrInterface {
 	/**
 	 * If TRUE will use OR between conditions, will use AND otherwise. Default FALSE
 	 */
-	__or: boolean;
-	/**
-	 *
-	 */
-	[key: string]: OperatorOptionsType;
+	__or?: Boolean;
 }
+
+type ConditionObject = ConditionOperatorInterface & ConditionAndOrInterface;
+
 /**
  * If first value is equal to "__or" will use OR between conditions.
  */
 interface ConditionOptionsArray {
-	[index: number]: String | ConditionObject | Array<ConditionOptionsArray>;
+	[index: number]: ConditionObject | String | Array<ConditionOptionsArray>;
 }
 
 interface OperatorOptionsObject {
@@ -66,10 +89,11 @@ type OperatorOptionsType =
 	| number
 	| Date
 	| null
+	| undefined
 	| boolean
 	| Array<String | number | Date>;
 
-type ConditionOptions = String | ConditionOptionsArray | ConditionObject;
+type ConditionOptions = ConditionOptionsArray | ConditionObject;
 
 const create_conditions = (value: ConditionOptions): String => {
 	let isAnd = true;
@@ -78,14 +102,19 @@ const create_conditions = (value: ConditionOptions): String => {
 			value.shift();
 			isAnd = false;
 		}
-		return value.map(create_conditions).join(isAnd ? ' AND ' : ' OR ');
+		return `(${value
+			.map(create_conditions)
+			.join(isAnd ? ' AND ' : ' OR ')})`;
 	}
-	if (typeof value === 'string') return value;
+	if (typeof value === 'string')
+		return value.charAt(0) === '(' && value.charAt(value.length - 1) === ')'
+			? value
+			: `(${value})`;
 	if (typeof value !== 'object') throw 'value must be String or Object type';
 	const operation = (val: OperatorOptionsObject | any) => {
 		if (val === undefined) return;
 		if (Array.isArray(val)) return `IN (${val.map(escape).join(',')})`;
-		if (typeof val === 'object') {
+		if (typeof val === 'object' && val !== null) {
 			const {
 				like,
 				notlike,
@@ -104,9 +133,9 @@ const create_conditions = (value: ConditionOptions): String => {
 				'=': equal,
 			} = val;
 			if (like !== undefined) return `LIKE ${escape(like)}`;
-			if (notlike !== undefined) return `NOT LIKE ${escape(like)}`;
-			if (rlike !== undefined) return `RLIKE ${escape(like)}`;
-			if (notrlike !== undefined) return `NOT RLIKE ${escape(like)}`;
+			if (notlike !== undefined) return `NOT LIKE ${escape(notlike)}`;
+			if (rlike !== undefined) return `RLIKE ${escape(rlike)}`;
+			if (notrlike !== undefined) return `NOT RLIKE ${escape(notrlike)}`;
 			if (
 				between !== undefined &&
 				Array.isArray(between) &&
@@ -135,32 +164,129 @@ const create_conditions = (value: ConditionOptions): String => {
 				return `>= ${escape(greatherOrEqual)}`;
 			if (smallerOrEqual !== undefined)
 				return `<= ${escape(smallerOrEqual)}`;
-			if (equal !== undefined) return `= ${escape(smallerOrEqual)}`;
+			if (equal !== undefined) return `= ${escape(equal)}`;
 			return;
 		}
 		if (val === null || val === true || val === false)
-			return `IS ${escape(value)}`;
+			return `IS ${escape(val)}`;
 		return `= ${escape(val)}`;
 	};
+
 	if ('__or' in value) {
 		delete value['__or'];
 		isAnd = false;
 	}
-	return Object.entries(value)
+	return `(${Object.entries(value)
 		.map(([key, val]) => {
-			console.log(operation(val));
-
 			const operationResult = operation(val);
-			return val === undefined && operationResult
-				? val
-				: `${escapeKey(key)} ${operationResult}`;
+			return val === undefined && operationResult === undefined
+				? undefined
+				: val !== null && // Condition bellow checks if is between and put brackets
+				  !Array.isArray(val) &&
+				  typeof val === 'object' &&
+				  (val.between !== undefined || val.notbetween !== undefined)
+				? `(${escapeNames(key)} ${operationResult})`
+				: `${escapeNames(key)} ${operationResult}`;
 		})
 		.filter((v) => v !== undefined)
-		.join(isAnd ? ' AND ' : ' OR ');
+		.join(isAnd ? ' AND ' : ' OR ')})`;
 };
 
-export const where = (opts: ConditionOptions) => {
+export const where = (opts: ConditionOptions): string => {
 	return `WHERE ${create_conditions(opts)}`;
+};
+const having = (opts: ConditionOptions): string => {
+	return `HAVING ${create_conditions(opts)}`;
+};
+
+interface JoinOptions {}
+
+interface GroupObject {}
+
+interface ExpressionObject {
+	expression: string;
+}
+
+const isExpressionObject = (val: any): val is ExpressionObject => {
+	return typeof val?.expression === 'string';
+};
+
+interface SelectObject {
+	/**
+	 * Key is the alias. If value type is String will escape the names with \`\`. Name escaping will be ignored if passing an object with expression key containing the query expression.
+	 */
+	[key: string]: string | ExpressionObject;
+}
+
+type SelectColumns = string | Array<string | SelectObject> | SelectObject;
+
+interface SelectOptions {
+	/**
+	 * Default true. Defines if alias should be prepended.
+	 */
+	prependAlias?: boolean;
+	/**
+	 * Columns to select, if undefined will do ${from}
+	 */
+	columns?: SelectColumns;
+	join?: JoinOptions;
+	where?: ConditionOptions;
+	group?: string | Array<string | GroupObject> | GroupObject;
+	having?: ConditionOptions;
+	order?: string | Array<string>;
+	limit?: number;
+	offset?: number;
+}
+
+const defaultSelectOptions: SelectOptions = {
+	prependAlias: true,
+};
+
+export const select = (from: string, opts?: SelectOptions): string => {
+	const tableRef = escapeNames(from);
+	const [table, alias] = extractTableAlias(tableRef);
+	const {
+		columns,
+		join,
+		where,
+		group,
+		having,
+		order,
+		limit,
+		offset,
+		prependAlias,
+	} = { ...defaultSelectOptions, ...opts };
+	const create_columns = (columns: SelectColumns): string | undefined => {
+		if (typeof columns === 'string') return columns;
+		if (Array.isArray(columns)) {
+			return columns
+				.map(create_columns)
+				.filter((v) => !!v)
+				.join(',');
+		}
+		if (
+			typeof columns === 'object' &&
+			columns !== null &&
+			columns !== undefined
+		) {
+			return Object.entries(columns)
+				.map(
+					([key, val]) =>
+						`${
+							isExpressionObject(val)
+								? val.expression
+								: `${
+										prependAlias === true ? `${alias}.` : ''
+								  }${escapeNames(val as string)}`
+						} AS ${key}`
+				)
+				.join(',');
+		}
+	};
+	const sColumns = columns ? create_columns(columns) : `${alias}.*`;
+	const sFrom = from ? ` FROM ${tableRef}` : '';
+
+	return `SELECT ${sColumns}${sFrom}`;
 };
 
 /*
