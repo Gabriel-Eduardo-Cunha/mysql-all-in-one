@@ -35,6 +35,11 @@ const escapeNames = (key: String) =>
 		)
 		.join(' ');
 
+const putBrackets = (value: string): string =>
+	value.charAt(0) === '(' && value.charAt(value.length - 1) === ')'
+		? value
+		: `(${value})`;
+
 /**
  *
  * @param tableRef
@@ -83,6 +88,10 @@ interface OperatorOptionsObject {
 	'='?: any;
 }
 
+interface AliasObject {
+	alias: string;
+}
+
 type OperatorOptionsType =
 	| OperatorOptionsObject
 	| String
@@ -95,7 +104,7 @@ type OperatorOptionsType =
 
 type ConditionOptions = ConditionOptionsArray | ConditionObject;
 
-const create_conditions = (value: ConditionOptions): String => {
+const create_conditions = (value: ConditionOptions, alias?: string): String => {
 	let isAnd = true;
 	if (Array.isArray(value)) {
 		if (value.length > 0 && value[0] === '__or') {
@@ -103,14 +112,12 @@ const create_conditions = (value: ConditionOptions): String => {
 			isAnd = false;
 		}
 		return `(${value
-			.map(create_conditions)
+			.map((v) => create_conditions(v, alias))
 			.join(isAnd ? ' AND ' : ' OR ')})`;
 	}
-	if (typeof value === 'string')
-		return value.charAt(0) === '(' && value.charAt(value.length - 1) === ')'
-			? value
-			: `(${value})`;
-	if (typeof value !== 'object') throw 'value must be String or Object type';
+	if (typeof value === 'string') return putBrackets(value);
+	if (typeof value !== 'object')
+		throw `Value must be String or Object type, received type ${typeof value}\n${value}`;
 	const operation = (val: OperatorOptionsObject | any) => {
 		if (val === undefined) return;
 		if (Array.isArray(val)) return `IN (${val.map(escape).join(',')})`;
@@ -178,6 +185,11 @@ const create_conditions = (value: ConditionOptions): String => {
 	}
 	return `(${Object.entries(value)
 		.map(([key, val]) => {
+			const escapedKey = escapeNames(key);
+			const column =
+				alias && escapedKey.indexOf('.') === -1
+					? `${alias}.${escapedKey}`
+					: escapedKey;
 			const operationResult = operation(val);
 			return val === undefined && operationResult === undefined
 				? undefined
@@ -185,21 +197,28 @@ const create_conditions = (value: ConditionOptions): String => {
 				  !Array.isArray(val) &&
 				  typeof val === 'object' &&
 				  (val.between !== undefined || val.notbetween !== undefined)
-				? `(${escapeNames(key)} ${operationResult})`
-				: `${escapeNames(key)} ${operationResult}`;
+				? `(${column} ${operationResult})`
+				: `${column} ${operationResult}`;
 		})
 		.filter((v) => v !== undefined)
 		.join(isAnd ? ' AND ' : ' OR ')})`;
-};
-
-export const where = (opts: ConditionOptions): string => {
-	return `WHERE ${create_conditions(opts)}`;
 };
 const having = (opts: ConditionOptions): string => {
 	return `HAVING ${create_conditions(opts)}`;
 };
 
-interface JoinOptions {}
+type JoinTable = string | (ExpressionObject & AliasObject);
+type JoinType = 'inner' | 'left' | 'right';
+
+interface JoinObject {
+	/**
+	 * Table or derived table
+	 */
+	table: JoinTable;
+	on?: ConditionOptions;
+	type?: JoinType;
+	columns?: SelectColumns;
+}
 
 interface GroupObject {}
 
@@ -210,15 +229,20 @@ interface ExpressionObject {
 const isExpressionObject = (val: any): val is ExpressionObject => {
 	return typeof val?.expression === 'string';
 };
+const isJoinObject = (val: any): val is JoinObject => {
+	return typeof val?.table === 'string' || isExpressionObject(val);
+};
 
 interface SelectObject {
 	/**
 	 * Key is the alias. If value type is String will escape the names with \`\`. Name escaping will be ignored if passing an object with expression key containing the query expression.
 	 */
-	[key: string]: string | ExpressionObject;
+	[key: string]: string | ExpressionObject | undefined;
 }
 
 type SelectColumns = string | Array<string | SelectObject> | SelectObject;
+
+type SelectJoin = JoinObject | Array<JoinObject> | undefined;
 
 interface SelectOptions {
 	/**
@@ -229,7 +253,7 @@ interface SelectOptions {
 	 * Columns to select, if undefined will do ${from}
 	 */
 	columns?: SelectColumns;
-	join?: JoinOptions;
+	join?: SelectJoin;
 	where?: ConditionOptions;
 	group?: string | Array<string | GroupObject> | GroupObject;
 	having?: ConditionOptions;
@@ -256,11 +280,14 @@ export const select = (from: string, opts?: SelectOptions): string => {
 		offset,
 		prependAlias,
 	} = { ...defaultSelectOptions, ...opts };
-	const create_columns = (columns: SelectColumns): string | undefined => {
+	const create_columns = (
+		columns: SelectColumns,
+		alias: string
+	): string | undefined => {
 		if (typeof columns === 'string') return columns;
 		if (Array.isArray(columns)) {
 			return columns
-				.map(create_columns)
+				.map((c) => create_columns(c, alias))
 				.filter((v) => !!v)
 				.join(',');
 		}
@@ -270,23 +297,63 @@ export const select = (from: string, opts?: SelectOptions): string => {
 			columns !== undefined
 		) {
 			return Object.entries(columns)
-				.map(
-					([key, val]) =>
-						`${
-							isExpressionObject(val)
-								? val.expression
-								: `${
-										prependAlias === true ? `${alias}.` : ''
-								  }${escapeNames(val as string)}`
-						} AS ${key}`
-				)
+				.filter(([_, val]) => val !== undefined)
+				.map(([key, val]) => {
+					if (isExpressionObject(val))
+						return `${val.expression} AS ${key}`;
+					const escapedColumn = escapeNames(val as string);
+					return `${
+						prependAlias === true &&
+						escapedColumn.indexOf('.') === -1
+							? `${alias}.`
+							: ''
+					}${escapedColumn} AS ${key}`;
+				})
 				.join(',');
 		}
 	};
-	const sColumns = columns ? create_columns(columns) : `${alias}.*`;
+	const create_joins = (join: SelectJoin): Array<any> => {
+		const sJoins: Array<string> = [];
+		const joinColumns: Array<string | undefined> = [];
+		if (join === undefined) return [sJoins, ''];
+		if (!Array.isArray(join)) join = [join];
+		join.filter((j) => isJoinObject(j)).forEach((j) => {
+			const { columns, table, type, on } = j;
+			const tableRef = isExpressionObject(table)
+				? `${putBrackets(table.expression)} ${table.alias}`
+				: escapeNames(table);
+			const [_, alias] = isExpressionObject(table)
+				? [table.expression, table.alias]
+				: extractTableAlias(tableRef);
+			if (columns !== undefined)
+				joinColumns.push(create_columns(columns, alias));
+			sJoins.push(
+				`${type ? `${type.toUpperCase()} ` : ''}JOIN ${tableRef}${
+					on ? ` ON ${create_conditions(on)}` : ''
+				}`
+			);
+		});
+		const jColumns = joinColumns.filter((j) => !!j).join(',');
+		return [
+			sJoins.length !== 0 ? ` ${sJoins.join(' ')}` : '',
+			jColumns ? `,${jColumns}` : '',
+		];
+	};
+	const create_where = (opts: ConditionOptions, alias?: string): string => {
+		return ` WHERE ${create_conditions(
+			opts,
+			prependAlias === true ? alias : undefined
+		)}`;
+	};
+	const defaultSColumns = `${alias}.*`;
+	const [sJoin, jColumns] = create_joins(join);
+	const sColumns = columns
+		? create_columns(columns, alias) || defaultSColumns
+		: defaultSColumns;
 	const sFrom = from ? ` FROM ${tableRef}` : '';
+	const sWhere = where ? create_where(where, alias) : '';
 
-	return `SELECT ${sColumns}${sFrom}`;
+	return `SELECT ${sColumns}${jColumns}${sFrom}${sJoin}${sWhere}`;
 };
 
 /*
