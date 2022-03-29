@@ -1,5 +1,6 @@
+import { select } from './query_builder';
 
-import {select} from "./query_builder";
+const today = new Date();
 
 const r = select('usuario u', {
 	columns: {
@@ -12,13 +13,16 @@ const r = select('usuario u', {
 	join: [
 		{
 			table: 'permission p',
-			on: { userId: 'id'}, // p.userId = u.userId
+			on: {
+				__cols_relation: true,
+				date: 'lll',
+				link: { like: 'hello' },
+			}, // (p.userId = u.userId)
 			// on: { userId: 'id', password: '1234'}, p.userId = u.userId AND p.password = '1234'
+			// on: { userId: 'id', module: {expression: 'licenca'}}, p.userId = u.userId AND p.password = '1234'
 		},
 	],
-	where: {
-		isFinished: true,
-	},
+	where: 'id = 1',
 });
 
 console.log(r);

@@ -1,17 +1,27 @@
-import {putBrackets, escVal, escapeNames, safeApplyAlias} from '../../utils'
-import { ConditionOptions  } from './types';
-import { OperatorOptionsObject } from './interfaces';
+import { putBrackets, escVal, escapeNames, safeApplyAlias } from '../../utils';
+import {
+	ConditionOptions,
+	isOperatorOptionsObject,
+	OperatorOptionsObject,
+} from './types';
 
-const create_conditions = (value: ConditionOptions, alias?: string): String => {
+const create_conditions = (
+	value: ConditionOptions,
+	alias?: string
+): String | undefined => {
 	let isAnd = true;
 	if (Array.isArray(value)) {
 		if (value.length > 0 && value[0] === '__or') {
 			value.shift();
 			isAnd = false;
 		}
-		return `(${value
+		if (value.length === 0) return undefined;
+		const conditions = value
 			.map((v) => create_conditions(v, alias))
-			.join(isAnd ? ' AND ' : ' OR ')})`;
+			.filter((v) => v !== undefined);
+		return conditions.length !== 0
+			? `(${conditions.join(isAnd ? ' AND ' : ' OR ')})`
+			: '';
 	}
 	if (typeof value === 'string') return putBrackets(value);
 	if (typeof value !== 'object')
@@ -19,7 +29,7 @@ const create_conditions = (value: ConditionOptions, alias?: string): String => {
 	const operation = (val: OperatorOptionsObject | any) => {
 		if (val === undefined) return;
 		if (Array.isArray(val)) return `IN (${val.map(escVal).join(',')})`;
-		if (typeof val === 'object' && val !== null) {
+		if (isOperatorOptionsObject(val)) {
 			const {
 				like,
 				notlike,
@@ -81,21 +91,25 @@ const create_conditions = (value: ConditionOptions, alias?: string): String => {
 		delete value['__or'];
 		isAnd = false;
 	}
-	return `(${Object.entries(value)
+
+	const isBetween = (val: any): boolean =>
+		val !== null &&
+		!Array.isArray(val) &&
+		typeof val === 'object' &&
+		(val.between !== undefined || val.notbetween !== undefined);
+	const conditions = Object.entries(value)
 		.map(([key, val]) => {
 			const column = safeApplyAlias(escapeNames(key), alias);
 			const operationResult = operation(val);
 			return val === undefined && operationResult === undefined
 				? undefined
-				: val !== null && // Condition bellow checks if is between and put brackets
-				  !Array.isArray(val) &&
-				  typeof val === 'object' &&
-				  (val.between !== undefined || val.notbetween !== undefined)
-				? `(${column} ${operationResult})`
+				: isBetween(val)
+				? putBrackets(`${column} ${operationResult}`)
 				: `${column} ${operationResult}`;
 		})
 		.filter((v) => v !== undefined)
-		.join(isAnd ? ' AND ' : ' OR ')})`;
+		.join(isAnd ? ' AND ' : ' OR ');
+	return conditions ? `(${conditions})` : '';
 };
 
 export default create_conditions;

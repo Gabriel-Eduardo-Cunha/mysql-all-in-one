@@ -1,15 +1,13 @@
+import { escVal, escapeNames, putBrackets, extractTableAlias } from '../utils';
+import join from './join';
+import columns from './columns';
+import where from './conditionals/where';
+import having from './conditionals/having';
+import { SelectOptions } from './types';
 
-
-import {escVal, escapeNames, putBrackets, extractTableAlias} from '../utils'
-import join from './join'
-import columns from './columns'
-import where from './conditionals/where'
-import having from './conditionals/having'
-import { SelectOptions } from './interfaces'
-
-const defaultSelectOptions:SelectOptions = {
+const defaultSelectOptions: SelectOptions = {
 	prependAlias: true,
-}
+};
 
 const select = (from: string, opts?: SelectOptions): string => {
 	const tableRef = escapeNames(from);
@@ -27,17 +25,19 @@ const select = (from: string, opts?: SelectOptions): string => {
 	} = { ...defaultSelectOptions, ...opts };
 
 	//Columns
-	const sColumns = columns(columnsOpts, prependAlias === true ? alias : undefined) || `${alias}.*`;
+	const sColumns =
+		columns(columnsOpts, prependAlias === true ? alias : undefined) ||
+		`${alias}.*`;
 	//From
 	const sFrom = from ? ` FROM ${tableRef}` : '';
 	//Join
 	const [sJoin, jColumns] = join(joinOpts);
 	//Where
-	const sWhere = whereOpts ? ` ${where(whereOpts, prependAlias ? alias : undefined)}` : '';
+	const sWhere = where(whereOpts, prependAlias ? alias : undefined);
 	//Group
 	const sGroup = '';
 	//Having
-	const sHaving = havingOpts ? ` ${having(havingOpts)}` : '';
+	const sHaving = having(havingOpts);
 	//Order
 	const sOrder = '';
 	//Limit
@@ -45,8 +45,7 @@ const select = (from: string, opts?: SelectOptions): string => {
 	//Offset
 	const sOffset = offset ? ` OFFSET ${offset}` : '';
 
-	return `SELECT ${sColumns}${jColumns}${sFrom}${sJoin}${sWhere}${sGroup}${sHaving}${sOrder}${sLimit}${sOffset}`;
+	return `SELECT ${sColumns}${jColumns}${sFrom}${sJoin}${sWhere}${sGroup}${sHaving}${sOrder}${sLimit}${sOffset};`;
 };
 
-export default select
-
+export default select;

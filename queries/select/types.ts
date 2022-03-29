@@ -1,10 +1,13 @@
-import { SelectColumns } from "./columns/types";
-import { ConditionOptions } from "./conditionals/types";
-import { SelectJoin } from "./join/types";
+import { SelectColumns } from './columns/types';
+import { ConditionOptions } from './conditionals/types';
+import { SelectJoin } from './join/types';
 
 export interface ExpressionObject {
-	expression:string;
+	expression: string;
 }
+export const isExpressionObject = (val: any): val is ExpressionObject => {
+	return typeof val?.expression === 'string';
+};
 
 export interface SelectOptions {
 	/**
@@ -23,4 +26,3 @@ export interface SelectOptions {
 	limit?: number;
 	offset?: number;
 }
-
