@@ -16,21 +16,15 @@ interface ConditionObject {
 }
 
 interface ColumnsRelation {
-	__cols_relation?: Array<Array<string>>;
+	__cols_relation?: ColumnsRelationObject;
 }
-interface ColumnsRelationArray {
-	// [index: number]: string | ColumnsRelationArray;
-	// /**
-	//  * If no alias passed will use the JOIN Alias
-	//  */
-	// [0]: string;
-	// /**
-	//  * If no alias passed will use the FROM alias
-	//  */
-	// [1]: string;
+type OnConditionObject = ConditionObject & ColumnsRelation;
+
+interface ColumnsRelationObject {
+	[key: string]: string;
 }
 
-interface ConditionOptionsArray extends Array<any> {
+interface ConditionOptionsArray /*extends Array<any>*/ {
 	[0]?: '__or' | OnConditionObject | String | ConditionOptionsArray;
 	[index: number]:
 		| OnConditionObject
@@ -38,8 +32,6 @@ interface ConditionOptionsArray extends Array<any> {
 		| ConditionOptionsArray
 		| undefined;
 }
-
-type OnConditionObject = ConditionObject & ColumnsRelation;
 
 export type JoinConditionOptions =
 	| ConditionOptionsArray

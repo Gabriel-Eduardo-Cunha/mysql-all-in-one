@@ -13,15 +13,27 @@ const r = select('usuario u', {
 	join: [
 		{
 			table: 'permission p',
-			on: {
-				__cols_relation: true,
-				date: 'lll',
-				link: { like: 'hello' },
-			}, // (p.userId = u.userId)
+			on: [
+				'__or',
+				{
+					h: 'a',
+					__cols_relation: {
+						a: 'a',
+						userId: 'hi',
+					},
+				},
+				'hello',
+				[
+					{
+						__cols_relation: { a: 'b' },
+					},
+				],
+			], // (p.userId = u.userId)
 			// on: { userId: 'id', password: '1234'}, p.userId = u.userId AND p.password = '1234'
 			// on: { userId: 'id', module: {expression: 'licenca'}}, p.userId = u.userId AND p.password = '1234'
 		},
 	],
+
 	where: 'id = 1',
 });
 
