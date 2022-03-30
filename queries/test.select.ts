@@ -10,8 +10,9 @@ const r = select('usuario u', {
 		// catName: 'catName',
 		// bornDate: { expression: 'STR_DATE(bornDate, "d/m/y")' },
 	},
+	group: ['hellows', 'his', {expression: 'IFNULL(number, hi)'}],
 	where: [
-		'',
+		
 		{
 			id: [1, 2, 3],
 		},
