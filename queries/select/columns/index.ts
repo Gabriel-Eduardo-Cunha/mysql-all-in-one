@@ -1,12 +1,15 @@
 import { isExpressionObject } from '../types';
 import { escapeNames, putBackticks, safeApplyAlias } from '../../utils';
-import { SelectColumns } from './types';
+import { isColumnAliasObject, SelectColumns } from './types';
 
 const create_columns = (
 	columns?: SelectColumns,
 	alias?: string
 ): string | undefined => {
-	if (typeof columns === 'string') return columns;
+	if (typeof columns === 'string') return safeApplyAlias(
+		escapeNames(columns as string),
+		alias
+	);
 	if (Array.isArray(columns)) {
 		return columns
 			.map((c) => create_columns(c, alias))
@@ -22,8 +25,8 @@ const create_columns = (
 			.filter(([_, val]) => val !== undefined)
 			.map(([key, val]) => {
 				const columnAlias = putBackticks(key);
-				if (isExpressionObject(val))
-					return `${val.expression} AS ${columnAlias}`;
+				if (isColumnAliasObject(val))
+					return `${val.__expression} AS ${columnAlias}`;
 				const columnRef = safeApplyAlias(
 					escapeNames(val as string),
 					alias

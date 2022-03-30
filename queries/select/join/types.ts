@@ -1,19 +1,8 @@
 import { SelectColumns } from '../columns/types';
 import { ConditionOptions } from '../conditionals/types';
+import { isAliasExpressionObject, AliasExpressionObject } from '../types';
 
-interface JoinExpressionObject {
-	expression: string;
-	alias: string;
-}
-const isJoinExpressionObject = (val: any): val is JoinExpressionObject =>
-	val !== undefined &&
-	val !== null &&
-	!Array.isArray(val) &&
-	typeof val === 'object' &&
-	val.expression !== undefined &&
-	val.alias !== undefined;
-
-type JoinTable = string | JoinExpressionObject;
+type JoinTable = string | AliasExpressionObject;
 type JoinType = 'inner' | 'left' | 'right';
 interface JoinObject {
 	/**
@@ -25,7 +14,7 @@ interface JoinObject {
 	columns?: SelectColumns;
 }
 export const isJoinObject = (val: any): val is JoinObject => {
-	return typeof val?.table === 'string' || isJoinExpressionObject(val);
+	return typeof val?.table === 'string' || isAliasExpressionObject(val);
 };
 
 export type SelectJoin = JoinObject | Array<JoinObject> | undefined;

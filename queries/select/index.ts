@@ -1,9 +1,10 @@
-import { escVal, escapeNames, putBrackets, extractTableAlias } from '../utils';
+import { escapeNames, extractTableAlias } from '../utils';
 import join from './join';
 import columns from './columns';
 import where from './conditionals/where';
 import having from './conditionals/having';
 import { SelectOptions } from './types';
+import { group, order } from './group_ordering';
 
 const defaultSelectOptions: SelectOptions = {
 	prependAlias: true,
@@ -18,7 +19,7 @@ const select = (from: string, opts?: SelectOptions): string => {
 		where: whereOpts,
 		group: groupOpts,
 		having: havingOpts,
-		order,
+		order: orderOpts,
 		limit,
 		offset,
 		prependAlias,
@@ -35,11 +36,11 @@ const select = (from: string, opts?: SelectOptions): string => {
 	//Where
 	const sWhere = where(whereOpts, prependAlias ? alias : undefined);
 	//Group
-	const sGroup = '';
+	const sGroup = group(groupOpts, alias);
 	//Having
 	const sHaving = having(havingOpts);
 	//Order
-	const sOrder = '';
+	const sOrder = order(orderOpts, alias);
 	//Limit
 	const sLimit = limit ? ` LIMIT ${limit}` : '';
 	//Offset

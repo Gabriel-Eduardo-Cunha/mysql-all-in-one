@@ -3,16 +3,28 @@ import { ConditionOptions } from './conditionals/types';
 import { SelectGroupOrder } from './group_ordering/type';
 import { SelectJoin } from './join/types';
 
-export interface ExpressionObject {
+export interface AliasExpressionObject {
 	expression: string;
+	alias: string;
+}
+export const isAliasExpressionObject = (val: any): val is AliasExpressionObject =>
+	val !== undefined &&
+	val !== null &&
+	!Array.isArray(val) &&
+	typeof val === 'object' &&
+	val.expression !== undefined &&
+	val.alias !== undefined;
+
+export interface ExpressionObject {
+	__expression: string;
 }
 export const isExpressionObject = (val: any): val is ExpressionObject => {
-	return typeof val?.expression === 'string';
+	return typeof val?.__expression === 'string';
 };
 
 export interface SelectOptions {
 	/**
-	 * Default true. Defines if alias should be prepended.
+	 * Default true. Defines if alias should be automaticaly prepended.
 	 */
 	prependAlias?: boolean;
 	/**
