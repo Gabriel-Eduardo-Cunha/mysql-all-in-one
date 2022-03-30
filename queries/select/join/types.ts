@@ -1,42 +1,5 @@
 import { SelectColumns } from '../columns/types';
-import { OperatorOptionsObject } from '../conditionals/types';
-
-interface ConditionObject {
-	[y: number]: never;
-	[k: string]:
-		| OperatorOptionsObject
-		| String
-		| number
-		| Date
-		| null
-		| undefined
-		| boolean
-		| Array<String | number | Date>;
-	__or?: boolean;
-}
-
-interface ColumnsRelation {
-	__cols_relation?: ColumnsRelationObject;
-}
-type OnConditionObject = ConditionObject & ColumnsRelation;
-
-interface ColumnsRelationObject {
-	[key: string]: string;
-}
-
-interface ConditionOptionsArray /*extends Array<any>*/ {
-	[0]?: '__or' | OnConditionObject | String | ConditionOptionsArray;
-	[index: number]:
-		| OnConditionObject
-		| String
-		| ConditionOptionsArray
-		| undefined;
-}
-
-export type JoinConditionOptions =
-	| ConditionOptionsArray
-	| OnConditionObject
-	| string;
+import { ConditionOptions } from '../conditionals/types';
 
 interface JoinExpressionObject {
 	expression: string;
@@ -57,7 +20,7 @@ interface JoinObject {
 	 * Table or expression Object
 	 */
 	table: JoinTable;
-	on?: JoinConditionOptions;
+	on?: ConditionOptions;
 	type?: JoinType;
 	columns?: SelectColumns;
 }

@@ -1,13 +1,15 @@
 import { putBrackets, escVal, escapeNames, safeApplyAlias } from '../../utils';
 import {
 	ConditionOptions,
+	isColumnRelationObject,
 	isOperatorOptionsObject,
 	OperatorOptionsObject,
 } from './types';
 
 const create_conditions = (
 	value: ConditionOptions,
-	alias?: string
+	alias?: string,
+	secondaryAlias?: string
 ): String | undefined => {
 	let isAnd = true;
 	if (Array.isArray(value)) {
@@ -17,7 +19,7 @@ const create_conditions = (
 		}
 		if (value.length === 0) return undefined;
 		const conditions = value
-			.map((v) => create_conditions(v, alias))
+			.map((v) => create_conditions(v, alias, secondaryAlias))
 			.filter((v) => v !== undefined);
 		return conditions.length !== 0
 			? `(${conditions.join(isAnd ? ' AND ' : ' OR ')})`
@@ -26,6 +28,7 @@ const create_conditions = (
 	if (typeof value === 'string') return putBrackets(value);
 	if (typeof value !== 'object')
 		throw `Value must be String or Object type, received type ${typeof value}\n${value}`;
+
 	const operation = (val: OperatorOptionsObject | any) => {
 		if (val === undefined) return;
 		if (Array.isArray(val)) return `IN (${val.map(escVal).join(',')})`;
@@ -99,6 +102,20 @@ const create_conditions = (
 		(val.between !== undefined || val.notbetween !== undefined);
 	const conditions = Object.entries(value)
 		.map(([key, val]) => {
+			if (key === '__col_relation' && isColumnRelationObject(val)) {
+				return Object.entries(val)
+					.map(
+						([col1, col2]) =>
+							`${safeApplyAlias(
+								escapeNames(col1),
+								alias
+							)} = ${safeApplyAlias(
+								escapeNames(col2),
+								secondaryAlias || alias
+							)}`
+					)
+					.join(isAnd ? ' AND ' : ' OR ');
+			}
 			const column = safeApplyAlias(escapeNames(key), alias);
 			const operationResult = operation(val);
 			return val === undefined && operationResult === undefined

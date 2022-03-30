@@ -31,7 +31,7 @@ const select = (from: string, opts?: SelectOptions): string => {
 	//From
 	const sFrom = from ? ` FROM ${tableRef}` : '';
 	//Join
-	const [sJoin, jColumns] = join(joinOpts);
+	const [sJoin, jColumns] = join(joinOpts, alias);
 	//Where
 	const sWhere = where(whereOpts, prependAlias ? alias : undefined);
 	//Group

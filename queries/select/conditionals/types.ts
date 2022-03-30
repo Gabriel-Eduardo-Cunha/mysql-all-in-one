@@ -1,28 +1,39 @@
-export interface ConditionObject {
-	[y: number]: never;
-	[k: string]:
-		| OperatorOptionsObject
-		| String
-		| number
-		| Date
-		| null
-		| undefined
-		| boolean
-		| Array<String | number | Date>;
+export type ConditionOptions =
+	| ConditionOptionsArray
+	| ConditionObject
+	| string
+	| undefined;
+
+type ConditionOptionsArray = ['__or' | ConditionOptions, ...ConditionOptions[]];
+
+type sqlValues = string | Date | Array<sqlValues> | null | boolean | number;
+
+interface ConditionObject {
 	__or?: boolean;
+	__col_relation?: ColumnRelationObject;
+	[k: string]:
+		| sqlValues
+		| OperatorOptionsObject
+		| ColumnRelationObject
+		| undefined;
+	[y: number]: never;
 }
 
-/**
- * If first value is equal to "__or" will use OR between conditions.
- */
-export interface ConditionOptionsArray extends Array<any> {
-	[0]?: '__or' | ConditionObject | String | ConditionOptionsArray;
-	[index: number]:
-		| ConditionObject
-		| String
-		| ConditionOptionsArray
-		| undefined;
+interface ColumnRelationObject {
+	[k: string]: string;
 }
+export const isColumnRelationObject = (
+	value: any
+): value is ColumnRelationObject =>
+	value !== undefined &&
+	value !== null &&
+	!Array.isArray(value) &&
+	typeof value === 'object' &&
+	Object.entries(value).reduce(
+		(acc: boolean, [key, val]) =>
+			acc && typeof key === 'string' && typeof val === 'string',
+		true
+	);
 
 export interface OperatorOptionsObject {
 	like?: string;
@@ -72,5 +83,3 @@ export const isOperatorOptionsObject = (
 		)
 	);
 };
-
-export type ConditionOptions = ConditionOptionsArray | ConditionObject | string;
