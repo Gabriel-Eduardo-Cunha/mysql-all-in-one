@@ -1,8 +1,20 @@
 import { SelectColumns } from '../columns/types';
 import { ConditionOptions } from '../conditionals/types';
-import { isAliasExpressionObject, AliasExpressionObject } from '../types';
+import { SelectTable } from '../types';
 
-type JoinTable = string | AliasExpressionObject;
+export interface AliasExpressionObject {
+	[key: string]: string;
+}
+export const isAliasExpressionObject = (
+	val: any
+): val is AliasExpressionObject =>
+	val !== undefined &&
+	val !== null &&
+	!Array.isArray(val) &&
+	typeof val === 'object' &&
+	Object.keys(val).length !== 0;
+
+type JoinTable = SelectTable;
 type JoinType = 'inner' | 'left' | 'right';
 interface JoinObject {
 	/**

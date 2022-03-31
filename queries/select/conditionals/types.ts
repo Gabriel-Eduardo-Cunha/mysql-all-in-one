@@ -1,12 +1,12 @@
 export type ConditionOptions =
 	| ConditionOptionsArray
 	| ConditionObject
-	| string
+	| String
 	| undefined;
 
 type ConditionOptionsArray = ['__or' | ConditionOptions, ...ConditionOptions[]];
 
-type sqlValues = string | Date | Array<sqlValues> | null | boolean | number;
+type sqlValues = String | Date | Array<sqlValues> | null | boolean | number;
 
 interface ConditionObject {
 	__or?: boolean;
@@ -36,10 +36,10 @@ export const isColumnRelationObject = (
 	);
 
 export interface OperatorOptionsObject {
-	like?: string;
-	notlike?: string;
-	rlike?: string;
-	notrlike?: string;
+	like?: String;
+	notlike?: String;
+	rlike?: String;
+	notrlike?: String;
 	between?: Array<String | number | Date>;
 	notbetween?: Array<String | number | Date>;
 	in?: Array<String | number | Date>;
@@ -52,7 +52,7 @@ export interface OperatorOptionsObject {
 	'!='?: String | number | Date;
 	'='?: String | number | Date;
 }
-const OperatorOptionsObjectKeys: Array<string> = [
+const OperatorOptionsObjectKeys: Array<String> = [
 	'like',
 	'notlike',
 	'rlike',
@@ -77,7 +77,7 @@ export const isOperatorOptionsObject = (
 		val !== null &&
 		val !== undefined &&
 		Object.keys(val).reduce(
-			(prev: boolean, cur: string) =>
+			(prev: boolean, cur: String) =>
 				prev || OperatorOptionsObjectKeys.includes(cur),
 			false
 		)

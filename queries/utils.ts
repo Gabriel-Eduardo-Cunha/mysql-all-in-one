@@ -1,6 +1,5 @@
 import mysql from 'mysql2';
 
-
 /**
  * Escapes a value into a valid mysql String representation
  */
@@ -19,7 +18,7 @@ export const escStr = (
 ): String =>
 	rest.reduce((acc, cur, i) => `${acc}${escVal(values[i])}${cur}`, firstStr);
 
-export const escapeNames = (key: string):string =>
+export const escapeNames = (key: string): string =>
 	key
 		.trim()
 		.replace(/ +/g, ' ') // removes double spaces
@@ -33,11 +32,10 @@ export const escapeNames = (key: string):string =>
 		)
 		.join(' ');
 
-
-export const putBackticks = (value: string):string =>
+export const putBackticks = (value: string): string =>
 	value.charAt(0) === '`' && value.charAt(value.length - 1) === '`'
-? value
-: `\`${value}\``;
+		? value
+		: `\`${value}\``;
 
 export const putBrackets = (value: string): string =>
 	value.charAt(0) === '(' && value.charAt(value.length - 1) === ')'
@@ -55,7 +53,7 @@ export const extractTableAlias = (tableRef: string): Array<string> => {
 	return [split[0], split[1]];
 };
 
-
-export const safeApplyAlias = (subject:string, alias?:string):string => subject.indexOf('.') === -1 && alias && typeof alias === 'string' ? `${alias}.${subject}` : subject
-
-
+export const safeApplyAlias = (subject: string, alias?: string): string =>
+	subject.indexOf('.') === -1 && alias && typeof alias === 'string'
+		? `${alias}.${subject}`
+		: subject;

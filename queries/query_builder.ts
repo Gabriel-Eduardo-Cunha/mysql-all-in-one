@@ -1,2 +1,4 @@
 import select from './select';
-export { select };
+import { escStr } from './utils';
+
+export { select, escStr };

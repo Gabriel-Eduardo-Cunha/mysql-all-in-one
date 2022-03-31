@@ -25,7 +25,8 @@ const create_conditions = (
 			? `(${conditions.join(isAnd ? ' AND ' : ' OR ')})`
 			: '';
 	}
-	if (typeof value === 'string') return putBrackets(value);
+	if (typeof value === 'string')
+		return value.length !== 0 ? putBrackets(value) : undefined;
 	if (typeof value !== 'object')
 		throw `Value must be String or Object type, received type ${typeof value}\n${value}`;
 

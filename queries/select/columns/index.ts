@@ -1,15 +1,18 @@
 import { isExpressionObject } from '../types';
-import { escapeNames, putBackticks, safeApplyAlias } from '../../utils';
+import {
+	escapeNames,
+	putBackticks,
+	putBrackets,
+	safeApplyAlias,
+} from '../../utils';
 import { isColumnAliasObject, SelectColumns } from './types';
 
 const create_columns = (
 	columns?: SelectColumns,
 	alias?: string
 ): string | undefined => {
-	if (typeof columns === 'string') return safeApplyAlias(
-		escapeNames(columns as string),
-		alias
-	);
+	if (typeof columns === 'string')
+		return safeApplyAlias(escapeNames(columns as string), alias);
 	if (Array.isArray(columns)) {
 		return columns
 			.map((c) => create_columns(c, alias))
@@ -24,9 +27,20 @@ const create_columns = (
 		return Object.entries(columns)
 			.filter(([_, val]) => val !== undefined)
 			.map(([key, val]) => {
+				if (key === '__expression' && isColumnAliasObject(val)) {
+					return Object.entries(val)
+						.map(
+							([expressionAlias, expression]) =>
+								`${putBrackets(expression)} AS ${putBackticks(
+									expressionAlias
+								)}`
+						)
+						.join(',');
+				}
+				if (typeof val !== 'string') {
+					throw `Incorrect columns object. Type error: expected string received "${typeof val}" value: ${val}`;
+				}
 				const columnAlias = putBackticks(key);
-				if (isColumnAliasObject(val))
-					return `${val.__expression} AS ${columnAlias}`;
 				const columnRef = safeApplyAlias(
 					escapeNames(val as string),
 					alias

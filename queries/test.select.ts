@@ -1,32 +1,27 @@
-import { select } from './query_builder';
+import { select, escStr } from './query_builder';
 
-const today = new Date();
-
-const r = select('usuario u', {
-	columns: [
-		'id', 'name', {
-			helloalias: 'hello',
-			// __expression: {
-			// 	name: '(SELECT name from blabnla)'
-			// }
-		}
-	],
-	join: {
-		table: 'permission p',
-		on: {
-			__col_relation: {userId: 'id'},
-			
-		},
-		columns: {
-			permissionName: 'name',
-			permissionId: 'id',
-		},
-		type: 'left',
+const r = select({
+	from: 'table',
+	order: {
+		// 'id': 'desc',
+		__expression: 'aaa',
 	},
-	group: ['id', 'name', ],
-	order: ['name', {__expression: 'STR_TO_DATE(u.bornDate, "%d/%m/%Y")'}],
-	limit: 10,
-	offset: 150
 });
+// const r = select({
+// 	from: 'money_manager.account a',
+// 	columns: ['id', 'name', 'selected', 'order'],
+// 	join: {
+// 		table: 'money_manager.wallet_info w',
+// 		on: { __col_relation: { account_id: 'id' } },
+// 		type: 'left',
+// 		columns: {
+// 			__expression: {
+// 				balance: 'ifnull(sum(`money_manager`.`w`.`balance`), 0)',
+// 			},
+// 		},
+// 	},
+// 	group: 'id',
+// 	order: { __expression: '-(`a`.`order`) desc' },
+// });
 
 console.log(r);
