@@ -1,11 +1,14 @@
 import { select, escStr } from './query_builder';
 
 const r = select({
-	from: 'table',
+	from: 'table t',
 	columns: { __expression: { homersimpson: 'if(data IS TRUE, 1, 0)' } },
-	group: {
-		// __no_alias: ['homersimpson']
-	},
+	group: [
+		'id',
+		{
+			__no_alias: 'homersimpson',
+		},
+	],
 	order: {
 		'table.id': 'asc',
 		name: 'desc',

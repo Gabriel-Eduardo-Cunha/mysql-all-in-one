@@ -40,7 +40,7 @@ const select = (opts: SelectOptions): string => {
 		prependAlias,
 	} = { ...defaultSelectOptions, ...opts };
 	const [table, alias] = from ? tableObject(from) : '';
-
+	const aliasToPrepend = prependAlias === true ? alias : undefined;
 	//Columns
 	const sColumns =
 		columns(columnsOpts, prependAlias === true ? alias : undefined) ||
@@ -50,18 +50,15 @@ const select = (opts: SelectOptions): string => {
 		? ` FROM ${table}${alias && alias !== table ? ` ${alias}` : ''}`
 		: '';
 	//Join
-	const [sJoin, jColumns] = join(
-		joinOpts,
-		prependAlias === true ? alias : undefined
-	);
+	const [sJoin, jColumns] = join(joinOpts, aliasToPrepend);
 	//Where
-	const sWhere = where(whereOpts, prependAlias ? alias : undefined);
+	const sWhere = where(whereOpts, aliasToPrepend);
 	//Group
-	const sGroup = group(groupOpts);
+	const sGroup = group(groupOpts, aliasToPrepend);
 	//Having
 	const sHaving = having(havingOpts);
 	//Order
-	const sOrder = order(orderOpts);
+	const sOrder = order(orderOpts, aliasToPrepend);
 	//Limit
 	const sLimit = limit ? ` LIMIT ${limit}` : '';
 	//Offset
