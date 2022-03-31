@@ -1,6 +1,7 @@
 import { SelectColumns } from './columns/types';
 import { ConditionOptions } from './conditionals/types';
-import { SelectGroupOrder } from './group_ordering/type';
+import { SelectGroup } from './group/type';
+import { SelectOrder } from './order/type';
 import { SelectJoin } from './join/types';
 
 export type SelectTable = string | ExpressionOrSelectObject;
@@ -28,9 +29,9 @@ export interface SelectOptions {
 	columns?: SelectColumns;
 	join?: SelectJoin;
 	where?: ConditionOptions;
-	group?: SelectGroupOrder;
+	group?: SelectGroup;
 	having?: ConditionOptions;
-	order?: SelectGroupOrder;
+	order?: SelectOrder;
 	limit?: number;
 	offset?: number;
 }

@@ -2,9 +2,17 @@ import { select, escStr } from './query_builder';
 
 const r = select({
 	from: 'table',
+	columns: { __expression: { homersimpson: 'if(data IS TRUE, 1, 0)' } },
+	group: {
+		// __no_alias: ['homersimpson']
+	},
 	order: {
-		// 'id': 'desc',
-		__expression: 'aaa',
+		'table.id': 'asc',
+		name: 'desc',
+		__expression: [
+			'STR_TO_DATE(date, "d/m/y")',
+			'STR_TO_DATE(born, "d/m/y")',
+		],
 	},
 });
 // const r = select({

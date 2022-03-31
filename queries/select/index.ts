@@ -4,7 +4,8 @@ import columns from './columns';
 import where from './conditionals/where';
 import having from './conditionals/having';
 import { SelectOptions, SelectTable } from './types';
-import { group, order } from './group_ordering';
+import { group } from './group';
+import { order } from './order';
 
 const defaultSelectOptions: SelectOptions = {
 	prependAlias: true,
@@ -56,11 +57,11 @@ const select = (opts: SelectOptions): string => {
 	//Where
 	const sWhere = where(whereOpts, prependAlias ? alias : undefined);
 	//Group
-	const sGroup = group(groupOpts, prependAlias === true ? alias : undefined);
+	const sGroup = group(groupOpts);
 	//Having
 	const sHaving = having(havingOpts);
 	//Order
-	const sOrder = order(orderOpts, prependAlias === true ? alias : undefined);
+	const sOrder = order(orderOpts);
 	//Limit
 	const sLimit = limit ? ` LIMIT ${limit}` : '';
 	//Offset
