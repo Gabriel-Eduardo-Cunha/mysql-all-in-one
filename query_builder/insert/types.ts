@@ -1,4 +1,6 @@
-const obj: InsertOptions = {
+import { isSqlValues, SqlValues } from '../types';
+
+export const defaultInsertOptions: InsertOptions = {
 	ignore: true,
 };
 
@@ -10,10 +12,21 @@ export interface InsertOptions {
 	ignore?: boolean;
 }
 
-type sqlValues = String | Date | null | boolean | number;
-
 export type InsertRows = Array<InsertRow> | InsertRow;
 
+export const isInsertRows = (val: any): val is InsertRows =>
+	val !== undefined &&
+	val !== null &&
+	typeof val === 'object' &&
+	((!Array.isArray(val) &&
+		Object.values(val).length !== 0 &&
+		Object.values(val)
+			.map(isSqlValues)
+			.every((v: boolean) => v === true)) ||
+		(Array.isArray(val) &&
+			val.length !== 0 &&
+			val.map(isInsertRows).every((v: boolean) => v === true)));
+
 interface InsertRow {
-	[key: string]: sqlValues | undefined;
+	[key: string]: SqlValues | undefined;
 }
