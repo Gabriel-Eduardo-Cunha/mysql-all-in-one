@@ -1,10 +1,11 @@
+import { emptyPrepStatement, PreparedStatement } from '../../types';
 import create_conditions from './create_conditions';
 import { ConditionOptions } from './types';
 
-const where = (opts?: ConditionOptions, alias?: string): string => {
-	if (opts === undefined) return '';
-	const conditions = create_conditions(opts, alias);
-	return conditions ? ` WHERE ${conditions}` : '';
+const where = (opts?: ConditionOptions, alias?: string): PreparedStatement => {
+	if (opts === undefined) return { ...emptyPrepStatement };
+	const { statement, values } = create_conditions(opts, alias);
+	return { statement: ` WHERE ${statement}`, values };
 };
 
 export default where;

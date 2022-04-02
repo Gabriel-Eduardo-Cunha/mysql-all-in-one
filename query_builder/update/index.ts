@@ -28,35 +28,32 @@ const update = (
 		returnPreparedStatement,
 		order: orderOpts,
 	} = { ...defaultUpdateOptions, ...opts };
-	const preparedStatementValues: Array<SqlValues> = [];
+	const prepStatementValues: Array<SqlValues> = [];
 	const tableRef = escapeNames(table);
 	const [_, alias] = extractTableAlias(tableRef);
-	const preparedStatement: PreparedStatement = {
-		statement: `UPDATE ${
-			ignore === true ? 'IGNORE ' : ''
-		}${tableRef} SET ${Object.entries(values)
-			.filter(([_, val]) => val !== undefined)
-			.map(([key, val]) => {
-				preparedStatementValues.push(val);
-				return `${putBackticks(key)} = ?`;
-			})
-			.join(',')}${where(whereOpts, alias)}${order(orderOpts, alias)}${
-			limit ? ` LIMIT ${limit}` : ''
-		};`,
-		values: preparedStatementValues,
+	const { statement: whereStatement, values: whereValues } = where(
+		whereOpts,
+		alias
+	);
+	const prepStatementQuery = `UPDATE ${
+		ignore === true ? 'IGNORE ' : ''
+	}${tableRef} SET ${Object.entries(values)
+		.filter(([_, val]) => val !== undefined)
+		.map(([key, val]) => {
+			prepStatementValues.push(val);
+			return `${putBackticks(key)} = ?`;
+		})
+		.join(',')}${whereStatement}${order(orderOpts, alias)}${
+		limit ? ` LIMIT ${limit}` : ''
+	};`;
+	prepStatementValues.push(...whereValues);
+	const prepStatement: PreparedStatement = {
+		statement: prepStatementQuery,
+		values: prepStatementValues,
 	};
 	return returnPreparedStatement === true
-		? preparedStatement
-		: generateQueryFromPreparedStatement(preparedStatement);
+		? prepStatement
+		: generateQueryFromPreparedStatement(prepStatement);
 };
 
 export default update;
-
-console.log(
-	update(
-		'client',
-		{ name: 'jonas', finished: 1 },
-		{ id: 1 },
-		{ returnPreparedStatement: true }
-	)
-);

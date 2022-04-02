@@ -1,6 +1,7 @@
-export const defaultDeleteOptions = {
+export const defaultDeleteOptions: DeleteOptions = {
 	ignore: false,
 	quick: false,
+	returnPreparedStatement: false,
 };
 export interface DeleteOptions {
 	/**
@@ -13,4 +14,9 @@ export interface DeleteOptions {
 	 * @default false
 	 */
 	quick?: boolean;
+	/**
+	 * @description If true will return a PreparedStament object
+	 * @default false
+	 */
+	returnPreparedStatement?: boolean;
 }

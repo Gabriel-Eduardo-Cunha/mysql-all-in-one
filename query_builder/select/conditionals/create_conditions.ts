@@ -1,5 +1,10 @@
-import { PreparedStatement } from '../../types';
-import { putBrackets, escVal, escapeNames, safeApplyAlias } from '../../utils';
+import {
+	emptyPrepStatement,
+	isPreparedStatement,
+	PreparedStatement,
+	SqlValues,
+} from '../../types';
+import { escapeNames, safeApplyAlias } from '../../utils';
 import {
 	ConditionOptions,
 	isColumnRelationObject,
@@ -7,33 +12,61 @@ import {
 	OperatorOptionsObject,
 } from './types';
 
+const mergePrepStatements = (
+	prepStatements: Array<PreparedStatement>,
+	isAnd: boolean
+): PreparedStatement => {
+	if (
+		prepStatements === null ||
+		prepStatements === undefined ||
+		!Array.isArray(prepStatements)
+	)
+		return { ...emptyPrepStatement };
+	const filteredPrepStatements = prepStatements.filter((v) =>
+		isPreparedStatement(v)
+	);
+
+	return filteredPrepStatements.length === 0
+		? { ...emptyPrepStatement }
+		: filteredPrepStatements.reduce(
+				(acc, cur): PreparedStatement => ({
+					statement: `${acc.statement} ${
+						isAnd === true ? 'AND' : 'OR'
+					} ${cur.statement}`,
+					values: [...acc.values, ...cur.values],
+				})
+		  );
+};
+
 const create_conditions = (
 	value: ConditionOptions,
 	alias?: string,
 	secondaryAlias?: string
-): PreparedStatement | undefined => {
+): PreparedStatement => {
+	let prepStatementQuery: string = '';
+	const prepStatementValues: Array<SqlValues> = [];
 	let isAnd = true;
 	if (Array.isArray(value)) {
 		if (value.length > 0 && value[0] === '__or') {
 			value.shift();
 			isAnd = false;
 		}
-		if (value.length === 0) return undefined;
-		const conditions = value
-			.map((v) => create_conditions(v, alias, secondaryAlias))
-			.filter((v) => v !== undefined);
-		return conditions.length !== 0
-			? `(${conditions.join(isAnd ? ' AND ' : ' OR ')})`
-			: '';
+		if (value.length === 0) return { ...emptyPrepStatement };
+		const conditions = value.map((v) =>
+			create_conditions(v, alias, secondaryAlias)
+		);
+		return mergePrepStatements(conditions, isAnd);
 	}
-	if (typeof value === 'string')
-		return value.length !== 0 ? putBrackets(value) : undefined;
+	if (typeof value === 'string') return { statement: value, values: [] };
 	if (typeof value !== 'object')
 		throw `Value must be String or Object type, received type ${typeof value}\n${value}`;
 
-	const operation = (val: OperatorOptionsObject | any) => {
+	const operation = (val: OperatorOptionsObject | any, column: string) => {
 		if (val === undefined) return;
-		if (Array.isArray(val)) return `IN (${val.map(escVal).join(',')})`;
+		if (Array.isArray(val)) {
+			prepStatementValues.push(...val);
+			return `${column} IN (${val.map((_) => '?').join(',')})`;
+		}
 		if (isOperatorOptionsObject(val)) {
 			const {
 				like,
@@ -52,44 +85,91 @@ const create_conditions = (
 				'<=': smallerOrEqual,
 				'=': equal,
 			} = val;
-			if (like !== undefined) return `LIKE ${escVal(like)}`;
-			if (notlike !== undefined) return `NOT LIKE ${escVal(notlike)}`;
-			if (rlike !== undefined) return `RLIKE ${escVal(rlike)}`;
-			if (notrlike !== undefined) return `NOT RLIKE ${escVal(notrlike)}`;
+			if (like !== undefined) {
+				prepStatementValues.push(like);
+				return `${column} LIKE ?`;
+			}
+			if (notlike !== undefined) {
+				prepStatementValues.push(notlike);
+				return `${column} NOT LIKE ?`;
+			}
+			if (rlike !== undefined) {
+				prepStatementValues.push(rlike);
+				return `${column} RLIKE ?`;
+			}
+			if (notrlike !== undefined) {
+				prepStatementValues.push(notrlike);
+				return `${column} NOT RLIKE ?`;
+			}
 			if (
 				between !== undefined &&
 				Array.isArray(between) &&
 				between.length === 2
-			)
-				return `BETWEEN ${escVal(between[0])} AND ${escVal(
-					between[1]
-				)}`;
+			) {
+				prepStatementValues.push(between[0], between[0]);
+				return `(${column} BETWEEN ? AND ?)`;
+			}
 			if (
 				notbetween !== undefined &&
 				Array.isArray(notbetween) &&
 				notbetween.length === 2
-			)
-				return `NOT BETWEEN ${escVal(notbetween[0])} AND ${escVal(
-					notbetween[1]
-				)}`;
-			if (inOperator !== undefined && Array.isArray(inOperator))
-				return `IN (${escVal(inOperator)})`;
-			if (notin !== undefined && Array.isArray(notin))
-				return `NOT IN (${escVal(notin)})`;
-			if (greaterThan !== undefined) return `> ${escVal(greaterThan)}`;
-			if (smallerThan !== undefined) return `< ${escVal(smallerThan)}`;
-			if (different !== undefined) return `<> ${escVal(different)}`;
-			if (notEqual !== undefined) return `<> ${escVal(notEqual)}`;
-			if (greatherOrEqual !== undefined)
-				return `>= ${escVal(greatherOrEqual)}`;
-			if (smallerOrEqual !== undefined)
-				return `<= ${escVal(smallerOrEqual)}`;
-			if (equal !== undefined) return `= ${escVal(equal)}`;
+			) {
+				prepStatementValues.push(notbetween[0], notbetween[0]);
+				return `(${column} NOT BETWEEN ? AND ?)`;
+			}
+			if (
+				inOperator !== undefined &&
+				Array.isArray(inOperator) &&
+				inOperator.length !== 0
+			) {
+				prepStatementValues.push(...inOperator);
+				return `${column} IN (${inOperator.map((_) => '?').join(',')})`;
+			}
+			if (
+				notin !== undefined &&
+				Array.isArray(notin) &&
+				notin.length !== 0
+			) {
+				prepStatementValues.push(...notin);
+				return `${column} NOT IN (${notin.map((_) => '?').join(',')})`;
+			}
+
+			if (greaterThan !== undefined) {
+				prepStatementValues.push(greaterThan);
+				return `${column} > ?`;
+			}
+
+			if (smallerThan !== undefined) {
+				prepStatementValues.push(smallerThan);
+				return `${column} < ?`;
+			}
+			if (different !== undefined) {
+				prepStatementValues.push(different);
+				return `${column} <> ?`;
+			}
+			if (notEqual !== undefined) {
+				prepStatementValues.push(notEqual);
+				return `${column} != ?`;
+			}
+			if (greatherOrEqual !== undefined) {
+				prepStatementValues.push(greatherOrEqual);
+				return `${column} >= ?`;
+			}
+			if (smallerOrEqual !== undefined) {
+				prepStatementValues.push(smallerOrEqual);
+				return `${column} <= ?`;
+			}
+			if (equal !== undefined) {
+				prepStatementValues.push(equal);
+				return `${column} = ?`;
+			}
 			return;
 		}
-		if (val === null || val === true || val === false)
-			return `IS ${escVal(val)}`;
-		return `= ${escVal(val)}`;
+		prepStatementValues.push(val);
+		if (val === null || val === true || val === false) {
+			return `${column} IS ?`;
+		}
+		return `${column} = ?`;
 	};
 
 	if ('__or' in value) {
@@ -97,11 +177,6 @@ const create_conditions = (
 		isAnd = false;
 	}
 
-	const isBetween = (val: any): boolean =>
-		val !== null &&
-		!Array.isArray(val) &&
-		typeof val === 'object' &&
-		(val.between !== undefined || val.notbetween !== undefined);
 	const conditions = Object.entries(value)
 		.map(([key, val]) => {
 			if (key === '__col_relation' && isColumnRelationObject(val)) {
@@ -119,16 +194,15 @@ const create_conditions = (
 					.join(isAnd ? ' AND ' : ' OR ');
 			}
 			const column = safeApplyAlias(escapeNames(key), alias);
-			const operationResult = operation(val);
+			const operationResult = operation(val, column);
 			return val === undefined && operationResult === undefined
 				? undefined
-				: isBetween(val)
-				? putBrackets(`${column} ${operationResult}`)
-				: `${column} ${operationResult}`;
+				: operationResult;
 		})
 		.filter((v) => v !== undefined)
 		.join(isAnd ? ' AND ' : ' OR ');
-	return conditions ? `(${conditions})` : '';
+	prepStatementQuery = conditions ? `(${conditions})` : '';
+	return { statement: prepStatementQuery, values: prepStatementValues };
 };
 
 export default create_conditions;

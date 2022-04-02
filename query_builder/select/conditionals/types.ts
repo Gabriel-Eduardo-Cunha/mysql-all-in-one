@@ -36,21 +36,21 @@ export const isColumnRelationObject = (
 	);
 
 export interface OperatorOptionsObject {
-	like?: String;
-	notlike?: String;
-	rlike?: String;
-	notrlike?: String;
-	between?: Array<String | number | Date>;
-	notbetween?: Array<String | number | Date>;
-	in?: Array<String | number | Date>;
-	notin?: Array<String | number | Date>;
-	'>'?: String | number | Date;
-	'<'?: String | number | Date;
-	'>='?: String | number | Date;
-	'<='?: String | number | Date;
-	'<>'?: String | number | Date;
-	'!='?: String | number | Date;
-	'='?: String | number | Date;
+	like?: string;
+	notlike?: string;
+	rlike?: string;
+	notrlike?: string;
+	between?: Array<string | number | Date>;
+	notbetween?: Array<string | number | Date>;
+	in?: Array<string | number | Date>;
+	notin?: Array<string | number | Date>;
+	'>'?: string | number | Date;
+	'<'?: string | number | Date;
+	'>='?: string | number | Date;
+	'<='?: string | number | Date;
+	'<>'?: string | number | Date;
+	'!='?: string | number | Date;
+	'='?: string | number | Date;
 }
 const OperatorOptionsObjectKeys: Array<String> = [
 	'like',

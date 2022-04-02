@@ -7,30 +7,6 @@ export interface PreparedStatement {
 	values: Array<SqlValues>;
 }
 
-export const generateQueryFromPreparedStatement = (
-	preparedStatement: PreparedStatement
-): string => {
-	const { statement, values } = preparedStatement;
-	if (typeof statement !== 'string') return '';
-	if (
-		values !== undefined &&
-		values !== null &&
-		Array.isArray(values) &&
-		values.length !== 0 &&
-		values.every((v) => isSqlValues(v) || undefined)
-	)
-		return statement;
-
-	const pieces = statement.split('?');
-	const firstPiece = pieces.pop();
-	return (
-		pieces.reduce(
-			(acc, cur, i) => `${acc}${escVal(values[i])}${cur}`,
-			firstPiece
-		) || ''
-	);
-};
-
 export const isSqlValues = (val: any): val is SqlValues =>
 	val === null ||
 	val === undefined ||
@@ -43,3 +19,35 @@ export const isArrayOfStrings = (val: any): val is Array<string> =>
 	val !== null &&
 	Array.isArray(val) &&
 	val.every((v) => typeof v === 'string');
+
+export const emptyPrepStatement: PreparedStatement = {
+	statement: '',
+	values: [],
+};
+export const isPreparedStatement = (val: any): val is PreparedStatement =>
+	val !== undefined &&
+	val !== null &&
+	!Array.isArray(val) &&
+	typeof val === 'object' &&
+	Object.keys(val).length === 2 &&
+	typeof val.statement === 'string' &&
+	val.statement !== '' &&
+	Array.isArray(val.values) &&
+	(val.values.length === 0 || val.values.every((v: any) => isSqlValues(v)));
+
+export const generateQueryFromPreparedStatement = (
+	preparedStatement: PreparedStatement
+): string => {
+	const { statement, values } = preparedStatement;
+	if (typeof statement !== 'string') return '';
+	if (isPreparedStatement(statement)) return statement || '';
+
+	const pieces = statement.split('?');
+	const firstPiece = pieces.shift();
+	return (
+		pieces.reduce(
+			(acc, cur, i) => `${acc}${escVal(values[i])}${cur}`,
+			firstPiece
+		) || ''
+	);
+};

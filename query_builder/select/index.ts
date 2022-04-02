@@ -52,11 +52,14 @@ const select = (opts: SelectOptions): string => {
 	//Join
 	const [sJoin, jColumns] = join(joinOpts, aliasToPrepend);
 	//Where
-	const sWhere = where(whereOpts, aliasToPrepend);
+	const { statement: sWhere, values: sWhereValues } = where(
+		whereOpts,
+		aliasToPrepend
+	);
 	//Group
 	const sGroup = group(groupOpts, aliasToPrepend);
 	//Having
-	const sHaving = having(havingOpts);
+	const { statement: sHaving, values: sHavingValues } = having(havingOpts);
 	//Order
 	const sOrder = order(orderOpts, aliasToPrepend);
 	//Limit
