@@ -7,7 +7,7 @@ export interface PreparedStatement {
 	values: Array<SqlValues>;
 }
 
-export const GenerateQueryFromPreparedStatement = (
+export const generateQueryFromPreparedStatement = (
 	preparedStatement: PreparedStatement
 ): string => {
 	const { statement, values } = preparedStatement;

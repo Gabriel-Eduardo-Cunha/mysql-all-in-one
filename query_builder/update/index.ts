@@ -1,7 +1,11 @@
 import { ConditionOptions } from '../select/conditionals/types';
 import where from '../select/conditionals/where';
 import { order } from '../select/order';
-import { PreparedStatement, SqlValues } from '../types';
+import {
+	generateQueryFromPreparedStatement,
+	PreparedStatement,
+	SqlValues,
+} from '../types';
 import { escapeNames, extractTableAlias, putBackticks } from '../utils';
 import {
 	defaultUpdateOptions,
@@ -21,6 +25,7 @@ const update = (
 	const {
 		ignore,
 		limit,
+		returnPreparedStatement,
 		order: orderOpts,
 	} = { ...defaultUpdateOptions, ...opts };
 	const preparedStatementValues: Array<SqlValues> = [];
@@ -40,7 +45,18 @@ const update = (
 		};`,
 		values: preparedStatementValues,
 	};
-	return preparedStatement;
+	return returnPreparedStatement === true
+		? preparedStatement
+		: generateQueryFromPreparedStatement(preparedStatement);
 };
 
 export default update;
+
+console.log(
+	update(
+		'client',
+		{ name: 'jonas', finished: 1 },
+		{ id: 1 },
+		{ returnPreparedStatement: true }
+	)
+);

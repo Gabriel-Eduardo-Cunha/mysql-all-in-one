@@ -1,3 +1,4 @@
+import { PreparedStatement } from '../../types';
 import { putBrackets, escVal, escapeNames, safeApplyAlias } from '../../utils';
 import {
 	ConditionOptions,
@@ -10,7 +11,7 @@ const create_conditions = (
 	value: ConditionOptions,
 	alias?: string,
 	secondaryAlias?: string
-): String | undefined => {
+): PreparedStatement | undefined => {
 	let isAnd = true;
 	if (Array.isArray(value)) {
 		if (value.length > 0 && value[0] === '__or') {

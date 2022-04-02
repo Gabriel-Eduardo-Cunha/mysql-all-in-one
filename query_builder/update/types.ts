@@ -12,8 +12,9 @@ export interface UpdateValues {
 	[key: string]: SqlValues;
 }
 
-export const defaultUpdateOptions = {
+export const defaultUpdateOptions: UpdateOptions = {
 	ignore: false,
+	returnPreparedStatement: false,
 };
 
 export interface UpdateOptions {
@@ -30,4 +31,10 @@ export interface UpdateOptions {
 	 * @description Will add LIMIT modifier
 	 */
 	limit?: number;
+
+	/**
+	 * @description If true will return a PreparedStament object
+	 * @default false
+	 */
+	returnPreparedStatement?: boolean;
 }
