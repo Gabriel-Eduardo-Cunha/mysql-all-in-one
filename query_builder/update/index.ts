@@ -33,15 +33,3 @@ const update = (
 		limit ? ` LIMIT ${limit}` : ''
 	};`;
 };
-
-console.log(
-	update(
-		'client c',
-		{ name: 'cleber' },
-		{ __or: true, id: [15, 2, 4, 56], name: null },
-		{
-			order: { born: 'desc' },
-			limit: 10,
-		}
-	)
-);
