@@ -20,11 +20,14 @@ export const isExpressionObject = (val: any): val is ExpressionObject => {
 export interface SelectOptions {
 	from?: SelectTable;
 	/**
-	 * Default true. Defines if alias should be automaticaly prepended.
+	 * @description If false will not prepend default table alias automaticaly.
+	 * @default true
 	 */
 	prependAlias?: boolean;
 	/**
-	 * Columns to select, if undefined will do ${from}
+	 * @description Columns
+	 * @example ["a", "b"]
+	 * @default `${alias}.*` where alias is the default table alias
 	 */
 	columns?: SelectColumns;
 	join?: SelectJoin;
