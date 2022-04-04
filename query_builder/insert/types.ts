@@ -2,6 +2,7 @@ import { isSqlValues, SqlValues } from '../types';
 
 export const defaultInsertOptions: InsertOptions = {
 	ignore: false,
+	returnPreparedStatement: false,
 };
 
 export interface InsertOptions {
@@ -14,6 +15,11 @@ export interface InsertOptions {
 	 * @description Will intert only the columns specified on this array. If no value is informed will use the keys of first InsertRow object as columns to insert.
 	 */
 	columns?: Array<string>;
+	/**
+	 * @description If true will return a PreparedStament object
+	 * @default false
+	 */
+	returnPreparedStatement?: boolean;
 }
 
 export type InsertRows = Array<InsertRow> | InsertRow;

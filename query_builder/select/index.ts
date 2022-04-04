@@ -3,30 +3,55 @@ import join from './join';
 import columns from './columns';
 import where from './conditionals/where';
 import having from './conditionals/having';
-import { SelectOptions, SelectTable } from './types';
+import {
+	defaultSelectOptions,
+	SelectOptions,
+	SelectTable,
+	TableObjectReturn,
+} from './types';
 import { group } from './group';
 import { order } from './order';
+import {
+	generateQueryFromPreparedStatement,
+	PreparedStatement,
+	SqlValues,
+} from '../types';
 
-const defaultSelectOptions: SelectOptions = {
-	prependAlias: true,
-};
-
-export const tableObject = (table: SelectTable): Array<string> => {
-	if (typeof table === 'string') return extractTableAlias(escapeNames(table));
+export const tableObject = (
+	table: SelectTable | undefined
+): TableObjectReturn => {
+	if (typeof table === 'string') {
+		const [extractedTable, alias] = extractTableAlias(escapeNames(table));
+		return {
+			table: extractedTable,
+			alias,
+			values: [],
+		};
+	}
 	if (typeof table === 'object') {
 		const entries = Object.entries(table);
 		if (entries.length !== 0) {
 			const [key, val] = Object.entries(table)[0];
 			if (typeof val === 'string')
-				return [putBrackets(val), escapeNames(key)];
-			if (typeof val === 'object')
-				return [putBrackets(select(val)), escapeNames(key)];
+				return {
+					table: putBrackets(val),
+					alias: escapeNames(key),
+					values: [],
+				};
+			if (typeof val === 'object') {
+				const { statement, values } = select(val);
+				return {
+					table: putBrackets(statement),
+					alias: escapeNames(key),
+					values,
+				};
+			}
 		}
 	}
-	return ['', ''];
+	return { table: '', alias: '', values: [] };
 };
 
-const select = (opts: SelectOptions): string => {
+const select = (opts: SelectOptions): PreparedStatement => {
 	const {
 		from,
 		columns: columnsOpts,
@@ -39,35 +64,68 @@ const select = (opts: SelectOptions): string => {
 		offset,
 		prependAlias,
 	} = { ...defaultSelectOptions, ...opts };
-	const [table, alias] = from ? tableObject(from) : '';
+
+	const prepStatementValues = [];
+
+	const { table, alias, values } = tableObject(from);
+	prepStatementValues.push(...values);
 	const aliasToPrepend = prependAlias === true ? alias : undefined;
 	//Columns
 	const sColumns =
-		columns(columnsOpts, prependAlias === true ? alias : undefined) ||
+		columns(columnsOpts, aliasToPrepend) ||
 		(alias && prependAlias === true ? `${alias}.*` : '*');
 	//From
 	const sFrom = table
 		? ` FROM ${table}${alias && alias !== table ? ` ${alias}` : ''}`
 		: '';
 	//Join
-	const [sJoin, jColumns] = join(joinOpts, aliasToPrepend);
+	const {
+		joinPreparedStatement: { statement: sJoin, values: sJoinValues },
+		columnsPreparedStatement: jColumns,
+	} = join(joinOpts, aliasToPrepend);
+	prepStatementValues.push(...sJoinValues);
 	//Where
 	const { statement: sWhere, values: sWhereValues } = where(
 		whereOpts,
 		aliasToPrepend
 	);
+	prepStatementValues.push(...sWhereValues);
 	//Group
 	const sGroup = group(groupOpts, aliasToPrepend);
 	//Having
 	const { statement: sHaving, values: sHavingValues } = having(havingOpts);
+	prepStatementValues.push(...sHavingValues);
 	//Order
 	const sOrder = order(orderOpts, aliasToPrepend);
 	//Limit
 	const sLimit = limit ? ` LIMIT ${limit}` : '';
 	//Offset
 	const sOffset = offset ? ` OFFSET ${offset}` : '';
-
-	return `SELECT ${sColumns}${jColumns}${sFrom}${sJoin}${sWhere}${sGroup}${sHaving}${sOrder}${sLimit}${sOffset}`;
+	const prepStatement: PreparedStatement = {
+		statement: `SELECT ${sColumns}${jColumns}${sFrom}${sJoin}${sWhere}${sGroup}${sHaving}${sOrder}${sLimit}${sOffset}`,
+		values: prepStatementValues,
+	};
+	return prepStatement;
 };
 
-export default (opts: SelectOptions) => `${select(opts)};`;
+const selectStatement = (opts: SelectOptions): PreparedStatement | string => {
+	const prepStatement = select(opts);
+	prepStatement.statement = `${prepStatement.statement};`;
+	return opts.returnPreparedStatement === true
+		? prepStatement
+		: generateQueryFromPreparedStatement(prepStatement);
+};
+
+export default selectStatement;
+
+console.log(
+	selectStatement({
+		from: 'client',
+		join: {
+			table: 'gay',
+			on: { id: 2 },
+		},
+		where: { id: 5 },
+		returnPreparedStatement: true,
+	})
+);

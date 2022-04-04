@@ -3,6 +3,7 @@ import { ConditionOptions } from './conditionals/types';
 import { SelectGroup } from './group/type';
 import { SelectOrder } from './order/type';
 import { SelectJoin } from './join/types';
+import { SqlValues } from '../types';
 
 export type SelectTable = string | ExpressionOrSelectObject;
 
@@ -17,6 +18,10 @@ export const isExpressionObject = (val: any): val is ExpressionObject => {
 	return typeof val?.__expression === 'string';
 };
 
+export const defaultSelectOptions: SelectOptions = {
+	prependAlias: true,
+	returnPreparedStatement: false,
+};
 export interface SelectOptions {
 	from?: SelectTable;
 	/**
@@ -37,4 +42,15 @@ export interface SelectOptions {
 	order?: SelectOrder;
 	limit?: number;
 	offset?: number;
+	/**
+	 * @description If true will return a PreparedStament object
+	 * @default false
+	 */
+	returnPreparedStatement?: boolean;
+}
+
+export interface TableObjectReturn {
+	table: string;
+	alias: string;
+	values: Array<SqlValues>;
 }

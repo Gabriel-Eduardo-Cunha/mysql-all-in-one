@@ -1,3 +1,4 @@
+import { PreparedStatement } from '../../types';
 import { SelectColumns } from '../columns/types';
 import { ConditionOptions } from '../conditionals/types';
 import { SelectTable } from '../types';
@@ -30,3 +31,8 @@ export const isJoinObject = (val: any): val is JoinObject => {
 };
 
 export type SelectJoin = JoinObject | Array<JoinObject> | undefined;
+
+export interface JoinReturnObject {
+	joinPreparedStatement: PreparedStatement;
+	columnsPreparedStatement: string;
+}
