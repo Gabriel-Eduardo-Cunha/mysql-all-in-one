@@ -117,15 +117,3 @@ const selectStatement = (opts: SelectOptions): PreparedStatement | string => {
 };
 
 export default selectStatement;
-
-console.log(
-	selectStatement({
-		from: 'client',
-		join: {
-			table: 'gay',
-			on: { id: 2 },
-		},
-		where: { id: 5 },
-		returnPreparedStatement: true,
-	})
-);
