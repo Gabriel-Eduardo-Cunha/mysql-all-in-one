@@ -4,7 +4,7 @@ import {
 	PreparedStatement,
 	SqlValues,
 } from '../../types';
-import { escapeNames, safeApplyAlias } from '../../utils';
+import { escapeNames, safeApplyAlias, sqlExpression } from '../../utils';
 import {
 	ConditionOptions,
 	isColumnRelationObject,
@@ -53,13 +53,21 @@ const create_conditions = (
 		}
 		if (value.length === 0) return { ...emptyPrepStatement };
 		const conditions = value.map((v) =>
-			create_conditions(v, alias, secondaryAlias)
+			create_conditions(v as ConditionOptions, alias, secondaryAlias)
 		);
 		return mergePrepStatements(conditions, isAnd);
 	}
-	if (typeof value === 'string') return { statement: value, values: [] };
+	if (typeof value === 'string')
+		throw `strings are not valid as condition, use the sqlExpression function to create custom expressions: sqlExpression\`${value}\``;
 	if (typeof value !== 'object')
 		throw `Value must be String or Object type, received type ${typeof value}\n${value}`;
+
+	if (value.__is_prep_statement === true) {
+		delete value.__is_prep_statement;
+		if (isPreparedStatement(value)) {
+			return value;
+		}
+	}
 
 	const operation = (val: OperatorOptionsObject | any, column: string) => {
 		if (val === undefined) return;

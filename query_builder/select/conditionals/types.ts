@@ -1,18 +1,18 @@
+import { SqlValues } from '../../types';
+
 export type ConditionOptions =
 	| ConditionOptionsArray
 	| ConditionObject
-	| String
 	| undefined;
 
 type ConditionOptionsArray = ['__or' | ConditionOptions, ...ConditionOptions[]];
-
-type sqlValues = String | Date | Array<sqlValues> | null | boolean | number;
 
 interface ConditionObject {
 	__or?: boolean;
 	__col_relation?: ColumnRelationObject;
 	[k: string]:
-		| sqlValues
+		| SqlValues
+		| Array<SqlValues>
 		| OperatorOptionsObject
 		| ColumnRelationObject
 		| undefined;

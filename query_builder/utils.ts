@@ -1,4 +1,6 @@
 import mysql from 'mysql2';
+import { ConditionOptions } from './select/conditionals/types';
+import { PreparedStatement, SqlValues } from './types';
 
 /**
  * Escapes a value into a valid mysql String representation
@@ -6,11 +8,27 @@ import mysql from 'mysql2';
 export const escVal = mysql.escape;
 
 /**
- * Tagged template literal function to escape all passed values
- * Example:
- * 	const name = 'Foo'
- * 	escStr\`name = ${name}\`
- * > name = 'Foo'
+ *
+ * @description Tagged template literal function to create sql expressions, will automatically escape interpolated variables to valid sql values;
+ * @example sqlExpression`STR_TO_DATE(date, "%d/%m/%Y") = ${new Date(2020, 8, 30)}`
+ * >> 'STR_TO_DATE(date, "%d/%m/%Y") = "2020-8-30"'
+ */
+export const sqlExpression = (
+	[firstStr, ...rest]: TemplateStringsArray,
+	...values: Array<SqlValues>
+): ConditionOptions => {
+	const statement = rest.reduce((acc, cur) => `${acc}?${cur}`, firstStr);
+	return {
+		statement,
+		values,
+		__is_prep_statement: true,
+	};
+};
+
+/**
+ * @description Tagged template literal function to escape all passed values
+ * @example const name = 'Foo'; escStr`name=${name}`;
+ * @output "name = 'Foo'"
  */
 export const escStr = (
 	[firstStr, ...rest]: TemplateStringsArray,

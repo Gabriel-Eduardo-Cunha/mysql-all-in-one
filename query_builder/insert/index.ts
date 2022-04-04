@@ -3,7 +3,7 @@ import {
 	isArrayOfStrings,
 	PreparedStatement,
 } from '../types';
-import { escVal, putBackticks } from '../utils';
+import { putBackticks } from '../utils';
 import {
 	InsertOptions,
 	InsertRows,

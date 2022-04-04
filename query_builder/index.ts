@@ -2,7 +2,7 @@ import select from './select';
 import insert from './insert';
 import deleteFrom from './delete';
 import update from './update';
-import { escStr } from './utils';
+import { escStr, sqlExpression } from './utils';
 
 const query_builder = {
 	select,
@@ -13,4 +13,4 @@ const query_builder = {
 
 export default query_builder;
 
-export { escStr };
+export { escStr, sqlExpression };

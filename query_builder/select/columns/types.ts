@@ -9,6 +9,13 @@ interface SelectObject {
 	 * Key is the alias. If value type is String will escape the names with \`\`. Name escaping will be ignored if passing an object with expression key containing the query expression.
 	 */
 	[key: string]: string | undefined | ColumnAliasObject;
+	/**
+	 * @description Objects with string values, be careful with possible SQL Injections (text here are not escaped in any way)
+	 * @example __expression: {
+	 *		birthday: `DATE_FORMAT(birthday, "%d/%m/%Y")`,
+	 * }
+	 * >>> (DATE_FORMAT(birthday, "%d/%m/%Y")) AS `birthday`
+	 */
 	__expression?: ColumnAliasObject;
 }
 

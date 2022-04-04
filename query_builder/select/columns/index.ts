@@ -1,4 +1,3 @@
-import { isExpressionObject } from '../types';
 import {
 	escapeNames,
 	putBackticks,

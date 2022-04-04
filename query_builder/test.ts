@@ -1,5 +1,5 @@
 import query_builder from '.';
-import { escStr } from './utils';
+import { sqlExpression } from './utils';
 
 console.log(
 	query_builder.select({
@@ -16,7 +16,7 @@ console.log(
 			type: 'left',
 		},
 		where: [
-			escStr`birthday = STR_TO_DATE(${new Date(2020, 8, 30)})`,
+			sqlExpression`birthday = STR_TO_DATE(${new Date(2020, 8, 30)})`,
 			{
 				id: 5,
 				name: { like: 'john' },
@@ -28,7 +28,8 @@ console.log(
 		},
 		limit: 5,
 		offset: 10,
-		having: escStr`try out`,
+		having: sqlExpression`try out`,
+		returnPreparedStatement: true,
 	})
 );
 
