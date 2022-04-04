@@ -64,4 +64,24 @@ export interface DataSelectOptions {
 	 * @example specificColumn: 'name' //Will return array of values of the column called 'name'
 	 */
 	specificColumn?: string;
+
+	/**
+	 * @description Special group, will group repeated rows caused by multiple joins
+	 *
+	 */
+	groupData?: GroupDataOptions;
 }
+
+interface GroupDataOptions {
+	by: string;
+	columnGroups: ColumnGroups;
+}
+export const isGroupDataOptions = (val: any): val is GroupDataOptions =>
+	val !== undefined &&
+	val !== null &&
+	!Array.isArray(val) &&
+	typeof val === 'object' &&
+	Object.values(val).length === 2 &&
+	typeof val.by === 'string' &&
+	val.by.length !== 0 &&
+	isColumnGroups(val.columnGroups);

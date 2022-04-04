@@ -102,7 +102,9 @@ const select = (opts: SelectOptions): PreparedStatement => {
 	//Offset
 	const sOffset = offset ? ` OFFSET ${offset}` : '';
 	const prepStatement: PreparedStatement = {
-		statement: `SELECT ${sColumns}${jColumns}${sFrom}${sJoin}${sWhere}${sGroup}${sHaving}${sOrder}${sLimit}${sOffset}`,
+		statement: `SELECT ${sColumns}${
+			jColumns ? `,${jColumns}` : ''
+		}${sFrom}${sJoin}${sWhere}${sGroup}${sHaving}${sOrder}${sLimit}${sOffset}`,
 		values: prepStatementValues,
 	};
 	return prepStatement;

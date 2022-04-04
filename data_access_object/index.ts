@@ -7,7 +7,9 @@ import {
 	DataPacket,
 	DataSelectOptions,
 	defaultDataSelectOptions,
+	isGroupDataOptions,
 } from './types';
+import { group } from './utils';
 
 class DataAccessObject {
 	protected connectionData: PoolOptions;
@@ -31,7 +33,7 @@ class DataAccessObject {
 	}
 
 	public async select(selectOpts: SelectOptions, opts?: DataSelectOptions) {
-		const { returnMode, specificColumn, specificRow } = {
+		const { returnMode, specificColumn, specificRow, groupData } = {
 			...defaultDataSelectOptions,
 			...opts,
 		};
@@ -39,8 +41,11 @@ class DataAccessObject {
 			...selectOpts,
 			returnPreparedStatement: true,
 		}) as PreparedStatement;
-		const resultSet = (await this.execute(prepStatement)) as DataPacket;
+		let resultSet = (await this.execute(prepStatement)) as DataPacket;
 		if (!Array.isArray(resultSet)) return resultSet;
+		if (isGroupDataOptions(groupData)) {
+			resultSet = group(resultSet, groupData.by, groupData.columnGroups);
+		}
 		switch (returnMode) {
 			case 'normal':
 				return resultSet;
@@ -63,7 +68,8 @@ class DataAccessObject {
 				} else if (
 					!!specificColumn &&
 					typeof specificColumn === 'string' &&
-					resultSet.length !== 0
+					resultSet.length !== 0 &&
+					resultSet[0][specificColumn] !== undefined
 				) {
 					return resultSet.map((row) => row[specificColumn]);
 				}
@@ -87,18 +93,56 @@ export default DataAccessObject;
 
 const dao = new DataAccessObject({
 	user: 'root',
-	password: '',
+	password: '1234',
 	database: 'ambisistest',
 	host: 'localhost',
-	port: 3307,
+	port: 3306,
 });
 
 const main = async () => {
-	const result = await dao.select({
-		from: 'cliente',
-		columns: ['id', 'razaoSocial'],
-	});
-	console.log(result);
-	throw 'finish';
+	const result = await dao.select(
+		{
+			from: 'empreendimento e',
+			columns: ['id', 'razaoSocial'],
+			join: [
+				{
+					table: 'licenca l',
+					on: { __col_relation: { empreendimentoId: 'id' } },
+					type: 'left',
+					columns: { licencaId: 'id', numeroLicenca: 'numero' },
+				},
+				{
+					table: 'historico',
+					on: {
+						__col_relation: { moduleId: 'id' },
+						module: 'licenca',
+					},
+					columns: { historicoId: 'id', historicoTexto: 'texto' },
+					type: 'left',
+				},
+			],
+		},
+		{
+			groupData: {
+				by: 'id',
+				columnGroups: {
+					licencas: {
+						id: 'licencaId',
+						numero: 'numeroLicenca',
+					},
+					historicos: {
+						id: 'historicoId',
+						texto: 'historicoTexto',
+						licencaId: 'licencaId',
+					},
+				},
+			},
+		}
+	);
+	// console.log(result);
+
+	(result as DataPacket).forEach((v) => console.log(v));
+
+	// throw 'finish';
 };
 main();
