@@ -4,6 +4,7 @@ import { SelectJoin } from './types';
 import create_conditions from '../conditionals/create_conditions';
 import { tableObject } from '..';
 import { emptyPrepStatement, PreparedStatement, SqlValues } from '../../types';
+import { isNotEmptyString } from '../../utils';
 
 const join = (join: SelectJoin, alias?: string): JoinReturnObject => {
 	const sJoins: Array<string> = [];
@@ -35,7 +36,11 @@ const join = (join: SelectJoin, alias?: string): JoinReturnObject => {
 		sJoins.push(
 			`${type ? `${type.toUpperCase()} ` : ''}JOIN ${joinExpression}${
 				joinAlias && joinAlias !== joinExpression ? ` ${joinAlias}` : ''
-			}${on ? ` ON ${onPrepStatement.statement}` : ''}`
+			}${
+				on && isNotEmptyString(onPrepStatement.statement)
+					? ` ON ${onPrepStatement.statement}`
+					: ''
+			}`
 		);
 	});
 	const jColumns = joinColumns.filter((j) => !!j).join(',');

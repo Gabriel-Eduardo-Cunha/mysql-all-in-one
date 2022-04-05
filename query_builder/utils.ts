@@ -75,3 +75,9 @@ export const safeApplyAlias = (subject: string, alias?: string): string =>
 	subject.indexOf('.') === -1 && alias && typeof alias === 'string'
 		? `${alias}.${subject}`
 		: subject;
+
+export const isNotEmptyString = (val: any): val is string =>
+	val !== undefined &&
+	val !== null &&
+	typeof val === 'string' &&
+	val.length !== 0;

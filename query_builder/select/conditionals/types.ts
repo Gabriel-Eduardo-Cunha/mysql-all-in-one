@@ -40,10 +40,15 @@ export interface OperatorOptionsObject {
 	notlike?: string;
 	rlike?: string;
 	notrlike?: string;
+	regexp?: string;
+	notregexp?: string;
 	between?: Array<string | number | Date>;
 	notbetween?: Array<string | number | Date>;
 	in?: Array<string | number | Date>;
+	is?: SqlValues;
+	isnot?: SqlValues;
 	notin?: Array<string | number | Date>;
+	'<=>'?: SqlValues;
 	'>'?: string | number | Date;
 	'<'?: string | number | Date;
 	'>='?: string | number | Date;
@@ -57,10 +62,15 @@ const OperatorOptionsObjectKeys: Array<String> = [
 	'notlike',
 	'rlike',
 	'notrlike',
+	'regexp',
+	'notregexp',
 	'between',
 	'notbetween',
 	'in',
 	'notin',
+	'is',
+	'isnot',
+	'<=>',
 	'>',
 	'<',
 	'>=',

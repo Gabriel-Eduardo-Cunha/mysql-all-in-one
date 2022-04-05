@@ -1,3 +1,4 @@
+import { PoolConnection } from 'mysql2';
 import { isArrayOfStrings, SqlValues } from '../query_builder/types';
 
 /**
@@ -38,6 +39,7 @@ export type DataPacket = Array<RowDataPacket>;
 export const defaultDataSelectOptions: DataSelectOptions = {
 	returnMode: 'normal',
 };
+
 export interface DataSelectOptions {
 	/**
 	 * @description The return mode decides what is returned:
@@ -76,6 +78,7 @@ interface GroupDataOptions {
 	by: string;
 	columnGroups: ColumnGroups;
 }
+
 export const isGroupDataOptions = (val: any): val is GroupDataOptions =>
 	val !== undefined &&
 	val !== null &&
@@ -92,4 +95,30 @@ export interface InsertOptionsDAO {
 	 * @default undefined
 	 */
 	rowsPerStatement?: number;
+}
+
+export const defaultDataAccessObjectOptions: DataAccessObjectOptions = {
+	usePreparedStatements: true,
+};
+export interface DataAccessObjectOptions {
+	/**
+	 * @default true
+	 * @description Will prepare and execute commands like `select`, `insert`, `delete` and `update` for a better performance and safety (Do not apply to `query` function). If for some reason you will execute too many different queries that may reach your `max_prepared_stmt_count` set this option to false.
+	 * @info `mysql2` does the prepared statements management, it will not prepare the same statement twice on the same connection. See: https://www.npmjs.com/package/mysql2#using-prepared-statements
+	 */
+	usePreparedStatements?: boolean;
+}
+
+export type GetPoolConnectionCallback = (
+	conn: PoolConnection
+) => void | Promise<any>;
+export interface GetPoolConnectionOptions {
+	database?: string;
+}
+
+export interface DatabaseSelected {
+	/**
+	 * @description Database selected during the execution of this command
+	 */
+	database?: string;
 }

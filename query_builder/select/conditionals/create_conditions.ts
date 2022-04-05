@@ -84,7 +84,12 @@ const create_conditions = (
 				between,
 				notbetween,
 				in: inOperator,
+				is,
+				isnot,
 				notin,
+				regexp,
+				notregexp,
+				'<=>': safeNullEqual,
 				'>': greaterThan,
 				'<': smallerThan,
 				'<>': different,
@@ -108,6 +113,14 @@ const create_conditions = (
 			if (notrlike !== undefined) {
 				prepStatementValues.push(notrlike);
 				return `${column} NOT RLIKE ?`;
+			}
+			if (regexp !== undefined) {
+				prepStatementValues.push(regexp);
+				return `${column} REGEXP ?`;
+			}
+			if (notregexp !== undefined) {
+				prepStatementValues.push(notregexp);
+				return `${column} NOT REGEXP ?`;
 			}
 			if (
 				between !== undefined &&
@@ -140,6 +153,20 @@ const create_conditions = (
 			) {
 				prepStatementValues.push(...notin);
 				return `${column} NOT IN (${notin.map((_) => '?').join(',')})`;
+			}
+
+			if (is !== undefined) {
+				prepStatementValues.push(is);
+				return `${column} IS ?`;
+			}
+			if (isnot !== undefined) {
+				prepStatementValues.push(isnot);
+				return `${column} IS NOT ?`;
+			}
+
+			if (safeNullEqual !== undefined) {
+				prepStatementValues.push(safeNullEqual);
+				return `${column} <=> ?`;
 			}
 
 			if (greaterThan !== undefined) {

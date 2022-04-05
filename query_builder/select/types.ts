@@ -36,6 +36,9 @@ export interface SelectOptions {
 	 */
 	columns?: SelectColumns;
 	join?: SelectJoin;
+	/**
+	 * @description Where condition, will use alias
+	 */
 	where?: ConditionOptions;
 	group?: SelectGroup;
 	having?: ConditionOptions;

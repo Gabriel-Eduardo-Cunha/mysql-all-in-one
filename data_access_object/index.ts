@@ -1,7 +1,11 @@
-import mysql, { PoolOptions, Pool, OkPacket } from 'mysql2';
+import mysql, { PoolOptions, Pool, OkPacket, PoolConnection } from 'mysql2';
 import { SelectOptions } from '../query_builder/select/types';
-import { PreparedStatement } from '../query_builder/types';
-import { putBackticks } from '../query_builder/utils';
+import {
+	generateQueryFromPreparedStatement,
+	isPreparedStatement,
+	PreparedStatement,
+} from '../query_builder/types';
+import { isNotEmptyString, putBackticks } from '../query_builder/utils';
 import query_builder from '../query_builder';
 import {
 	DataPacket,
@@ -9,6 +13,11 @@ import {
 	defaultDataSelectOptions,
 	isGroupDataOptions,
 	InsertOptionsDAO,
+	DataAccessObjectOptions,
+	defaultDataAccessObjectOptions,
+	GetPoolConnectionCallback,
+	GetPoolConnectionOptions,
+	DatabaseSelected,
 } from './types';
 import { arrayUnflat, group } from './utils';
 import { ConditionOptions } from '../query_builder/select/conditionals/types';
@@ -23,38 +32,42 @@ import {
 class DataAccessObject {
 	protected connectionData: PoolOptions;
 	protected pool: Pool;
+	protected options: DataAccessObjectOptions;
+	protected executionMethod: Function;
 
-	constructor(connectionData: PoolOptions) {
+	constructor(
+		connectionData: PoolOptions,
+		options?: DataAccessObjectOptions
+	) {
+		this.options = { ...defaultDataAccessObjectOptions, ...options };
 		this.connectionData = connectionData;
 		this.pool = mysql.createPool(connectionData);
-	}
-
-	public async useDatabase(database: string) {
-		await this.query(`USE ${putBackticks(database)};`);
-	}
-
-	public query(sql: string) {
-		return new Promise((resolve, reject) => {
-			this.pool.query(sql, (err, result) => {
-				if (err) reject(err);
-				resolve(result);
-			});
-		});
+		this.executionMethod =
+			this.options.usePreparedStatements === true
+				? this.execute
+				: this.query;
 	}
 
 	/**
 	 * @description Will execute select command as a prepared statement.
 	 */
-	public async select(selectOpts: SelectOptions, opts?: DataSelectOptions) {
-		const { returnMode, specificColumn, specificRow, groupData } = {
-			...defaultDataSelectOptions,
-			...opts,
-		};
+	public async select(
+		selectOpts: SelectOptions,
+		opts?: DataSelectOptions & DatabaseSelected
+	) {
+		const { returnMode, specificColumn, specificRow, groupData, database } =
+			{
+				...defaultDataSelectOptions,
+				...opts,
+			};
 		const prepStatement: PreparedStatement = query_builder.select({
 			...selectOpts,
 			returnPreparedStatement: true,
 		}) as PreparedStatement;
-		let resultSet = (await this.execute(prepStatement)) as DataPacket;
+		let resultSet = (await this.executionMethod(
+			prepStatement,
+			database
+		)) as DataPacket;
 		if (!Array.isArray(resultSet)) return resultSet;
 		if (isGroupDataOptions(groupData)) {
 			resultSet = group(resultSet, groupData.by, groupData.columnGroups);
@@ -104,7 +117,9 @@ class DataAccessObject {
 			...opts,
 			returnPreparedStatement: true,
 		}) as PreparedStatement;
-		const result = (await this.execute(preparedStatement)) as OkPacket;
+		const result = (await this.executionMethod(
+			preparedStatement
+		)) as OkPacket;
 		return result.affectedRows;
 	}
 
@@ -124,10 +139,16 @@ class DataAccessObject {
 			whereOpts,
 			{ ...opts, returnPreparedStatement: true }
 		) as PreparedStatement;
-		const result = (await this.execute(preparedStatement)) as OkPacket;
+		const result = (await this.executionMethod(
+			preparedStatement
+		)) as OkPacket;
 		return result.affectedRows;
 	}
 
+	/**
+	 * @description Will execute insert command as a prepared statement, by default will insert one row at a time, if you need to insert a large number of rows specify the option `rowsPerStatement` to insert more than one row per statement increassing performance.
+	 * @returns Number of updated rows;
+	 */
 	public async insert(
 		table: string,
 		rows: InsertRows,
@@ -154,7 +175,7 @@ class DataAccessObject {
 						opts
 					) as PreparedStatement;
 
-					await this.execute(preparedStatement);
+					await this.executionMethod(preparedStatement);
 				}
 				return null;
 			}
@@ -166,7 +187,7 @@ class DataAccessObject {
 					opts
 				) as PreparedStatement;
 
-				const result = (await this.execute(
+				const result = (await this.executionMethod(
 					preparedStatement
 				)) as OkPacket;
 				insertedIds.push(result.insertId);
@@ -180,13 +201,92 @@ class DataAccessObject {
 		return null;
 	}
 
-	public execute(preparedStatement: PreparedStatement): Promise<any> {
+	/**
+	 * @description Will run a query and return it's results, this command don't prepare and execute the statement.
+	 * @param sql Query to execute.
+	 * @param database Database used during the query execution. If null will use default connection database passed on connectionData from DAO object.
+	 * @returns Query response.
+	 */
+	public async query(sql: string | PreparedStatement, database?: string) {
+		return await this.getPoolConnection(
+			async (conn) => {
+				return await this.connQuery(conn, sql);
+			},
+			{ database }
+		);
+	}
+
+	private async execute(
+		preparedStatement: PreparedStatement,
+		database?: string
+	) {
+		return await this.getPoolConnection(
+			async (conn) => {
+				return await this.connExecute(conn, preparedStatement);
+			},
+			{ database }
+		);
+	}
+
+	private getPoolConnection(
+		callback: GetPoolConnectionCallback,
+		opts?: GetPoolConnectionOptions
+	) {
 		return new Promise((resolve, reject) => {
-			const { statement, values } = preparedStatement;
-			this.pool.execute(statement, values, (err, result) => {
-				if (err) reject(err);
-				resolve(result);
+			this.pool.getConnection(async (err, conn) => {
+				if (err) {
+					conn.release();
+					reject(err);
+					return;
+				}
+				const shouldChangeDatabase =
+					isNotEmptyString(opts?.database) &&
+					opts?.database !== this.connectionData.database;
+
+				// Change to the desired database
+				if (shouldChangeDatabase) {
+					conn.changeUser({ database: opts?.database as string });
+				}
+				resolve(await callback(conn));
+				// Change back to the original connection database
+				if (
+					shouldChangeDatabase &&
+					isNotEmptyString(this.connectionData.database)
+				) {
+					conn.changeUser({ database: this.connectionData.database });
+				}
+				conn.release();
 			});
+		});
+	}
+
+	private connExecute(
+		conn: PoolConnection,
+		preparedStatement: PreparedStatement
+	) {
+		return new Promise((resolve, reject) => {
+			conn.execute(
+				preparedStatement.statement,
+				preparedStatement.values,
+				(err, result) => {
+					if (err) return reject(err);
+					resolve(result);
+				}
+			);
+		});
+	}
+
+	private connQuery(conn: PoolConnection, sql: string | PreparedStatement) {
+		return new Promise((resolve, reject) => {
+			conn.query(
+				isPreparedStatement(sql)
+					? generateQueryFromPreparedStatement(sql)
+					: sql,
+				(err, result) => {
+					if (err) return reject(err);
+					resolve(result);
+				}
+			);
 		});
 	}
 }
