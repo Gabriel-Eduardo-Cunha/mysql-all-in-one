@@ -85,3 +85,11 @@ export const isGroupDataOptions = (val: any): val is GroupDataOptions =>
 	typeof val.by === 'string' &&
 	val.by.length !== 0 &&
 	isColumnGroups(val.columnGroups);
+
+export interface InsertOptionsDAO {
+	/**
+	 * @description If set to a number greater than 0 will insert multiple rows at once. Will increase the query execution for larger number of rows, but will disable inserted ids return.
+	 * @default undefined
+	 */
+	rowsPerStatement?: number;
+}

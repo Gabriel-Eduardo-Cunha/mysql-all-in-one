@@ -81,3 +81,10 @@ export const group = (
 		return acc;
 	}, [] as DataPacket);
 };
+
+export const arrayUnflat = (array: Array<any>, size: number) => {
+	if (!size || size <= 0 || !Array.isArray(array)) return array;
+	const newArray = [];
+	while (array.length > 0) newArray.push(array.splice(0, size));
+	return newArray;
+};

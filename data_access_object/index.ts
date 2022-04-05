@@ -1,4 +1,4 @@
-import mysql, { PoolOptions, Pool, RowDataPacket } from 'mysql2';
+import mysql, { PoolOptions, Pool, OkPacket } from 'mysql2';
 import { SelectOptions } from '../query_builder/select/types';
 import { PreparedStatement } from '../query_builder/types';
 import { putBackticks } from '../query_builder/utils';
@@ -8,8 +8,17 @@ import {
 	DataSelectOptions,
 	defaultDataSelectOptions,
 	isGroupDataOptions,
+	InsertOptionsDAO,
 } from './types';
-import { group } from './utils';
+import { arrayUnflat, group } from './utils';
+import { ConditionOptions } from '../query_builder/select/conditionals/types';
+import { DeleteOptions } from '../query_builder/delete/types';
+import { UpdateOptions, UpdateValues } from '../query_builder/update/types';
+import {
+	InsertOptions,
+	InsertRows,
+	isInsertRows,
+} from '../query_builder/insert/types';
 
 class DataAccessObject {
 	protected connectionData: PoolOptions;
@@ -19,6 +28,7 @@ class DataAccessObject {
 		this.connectionData = connectionData;
 		this.pool = mysql.createPool(connectionData);
 	}
+
 	public async useDatabase(database: string) {
 		await this.query(`USE ${putBackticks(database)};`);
 	}
@@ -32,6 +42,9 @@ class DataAccessObject {
 		});
 	}
 
+	/**
+	 * @description Will execute select command as a prepared statement.
+	 */
 	public async select(selectOpts: SelectOptions, opts?: DataSelectOptions) {
 		const { returnMode, specificColumn, specificRow, groupData } = {
 			...defaultDataSelectOptions,
@@ -78,7 +91,96 @@ class DataAccessObject {
 		}
 	}
 
-	private execute(preparedStatement: PreparedStatement): Promise<any> {
+	/**
+	 * @description Will execute delete command as a prepared statement.
+	 * @returns Number of deleted rows;
+	 */
+	public async delete(
+		table: string,
+		whereOpts?: ConditionOptions,
+		opts?: DeleteOptions
+	) {
+		const preparedStatement = query_builder.deleteFrom(table, whereOpts, {
+			...opts,
+			returnPreparedStatement: true,
+		}) as PreparedStatement;
+		const result = (await this.execute(preparedStatement)) as OkPacket;
+		return result.affectedRows;
+	}
+
+	/**
+	 * @description Will execute update command as a prepared statement.
+	 * @returns Number of updated rows;
+	 */
+	public async update(
+		table: string,
+		values: UpdateValues,
+		whereOpts?: ConditionOptions,
+		opts?: UpdateOptions
+	) {
+		const preparedStatement = query_builder.update(
+			table,
+			values,
+			whereOpts,
+			{ ...opts, returnPreparedStatement: true }
+		) as PreparedStatement;
+		const result = (await this.execute(preparedStatement)) as OkPacket;
+		return result.affectedRows;
+	}
+
+	public async insert(
+		table: string,
+		rows: InsertRows,
+		opts?: InsertOptionsDAO & InsertOptions
+	) {
+		opts = { ...opts, returnPreparedStatement: true };
+		const { rowsPerStatement } = {
+			...opts,
+		} as InsertOptionsDAO & InsertOptions;
+		delete opts?.rowsPerStatement;
+		if (isInsertRows(rows)) {
+			if (!Array.isArray(rows)) rows = [rows];
+			if (
+				rowsPerStatement !== undefined &&
+				rowsPerStatement !== null &&
+				typeof rowsPerStatement === 'number' &&
+				rowsPerStatement > 0
+			) {
+				const rowsGroups = arrayUnflat(rows, rowsPerStatement);
+				for (const rowsGroup of rowsGroups) {
+					const preparedStatement = query_builder.insert(
+						table,
+						rowsGroup,
+						opts
+					) as PreparedStatement;
+
+					await this.execute(preparedStatement);
+				}
+				return null;
+			}
+			const insertedIds = [];
+			for (const row of rows) {
+				const preparedStatement = query_builder.insert(
+					table,
+					row,
+					opts
+				) as PreparedStatement;
+
+				const result = (await this.execute(
+					preparedStatement
+				)) as OkPacket;
+				insertedIds.push(result.insertId);
+			}
+			return insertedIds.length === 0
+				? null
+				: insertedIds.length === 1
+				? insertedIds[0]
+				: insertedIds;
+		}
+		return null;
+	}
+
+	public execute(preparedStatement: PreparedStatement): Promise<any> {
 		return new Promise((resolve, reject) => {
 			const { statement, values } = preparedStatement;
 			this.pool.execute(statement, values, (err, result) => {
@@ -90,59 +192,3 @@ class DataAccessObject {
 }
 
 export default DataAccessObject;
-
-const dao = new DataAccessObject({
-	user: 'root',
-	password: '1234',
-	database: 'ambisistest',
-	host: 'localhost',
-	port: 3306,
-});
-
-const main = async () => {
-	const result = await dao.select(
-		{
-			from: 'empreendimento e',
-			columns: ['id', 'razaoSocial'],
-			join: [
-				{
-					table: 'licenca l',
-					on: { __col_relation: { empreendimentoId: 'id' } },
-					type: 'left',
-					columns: { licencaId: 'id', numeroLicenca: 'numero' },
-				},
-				{
-					table: 'historico',
-					on: {
-						__col_relation: { moduleId: 'id' },
-						module: 'licenca',
-					},
-					columns: { historicoId: 'id', historicoTexto: 'texto' },
-					type: 'left',
-				},
-			],
-		},
-		{
-			groupData: {
-				by: 'id',
-				columnGroups: {
-					licencas: {
-						id: 'licencaId',
-						numero: 'numeroLicenca',
-					},
-					historicos: {
-						id: 'historicoId',
-						texto: 'historicoTexto',
-						licencaId: 'licencaId',
-					},
-				},
-			},
-		}
-	);
-	// console.log(result);
-
-	(result as DataPacket).forEach((v) => console.log(v));
-
-	// throw 'finish';
-};
-main();

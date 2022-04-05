@@ -35,7 +35,7 @@ export const isInsertRows = (val: any): val is InsertRows =>
 			.every((v: boolean) => v === true)) ||
 		(Array.isArray(val) &&
 			val.length !== 0 &&
-			val.map(isInsertRows).every((v: boolean) => v === true)));
+			val.every((v: boolean) => isInsertRows(v))));
 
 export interface InsertRow {
 	[key: string]: SqlValues | undefined;
