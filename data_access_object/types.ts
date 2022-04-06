@@ -112,8 +112,12 @@ export interface DataAccessObjectOptions {
 export type GetPoolConnectionCallback = (
 	conn: PoolConnection
 ) => void | Promise<any>;
+export const defaultGetPoolConnectionOptions: GetPoolConnectionOptions = {
+	multipleStatements: false,
+};
 export interface GetPoolConnectionOptions {
 	database?: string;
+	multipleStatements?: boolean;
 }
 
 export interface DatabaseSelected {

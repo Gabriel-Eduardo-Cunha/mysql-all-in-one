@@ -88,3 +88,21 @@ export const arrayUnflat = (array: Array<any>, size: number) => {
 	while (array.length > 0) newArray.push(array.splice(0, size));
 	return newArray;
 };
+
+export const statementsMerge = (
+	stringArray: Array<string>,
+	maxStringSize: number
+) => {
+	return stringArray.reduce((acc: Array<string>, cur) => {
+		cur = `${cur};`;
+		if (
+			acc[acc.length - 1] !== undefined &&
+			acc[acc.length - 1].length + cur.length <= maxStringSize
+		) {
+			acc[acc.length - 1] = `${acc[acc.length - 1]}${cur}`;
+			return acc;
+		}
+		acc.push(cur);
+		return acc;
+	}, []);
+};

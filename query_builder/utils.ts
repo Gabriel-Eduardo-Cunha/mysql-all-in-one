@@ -33,7 +33,7 @@ export const sqlExpression = (
 export const escStr = (
 	[firstStr, ...rest]: TemplateStringsArray,
 	...values: Array<any>
-): String =>
+): string =>
 	rest.reduce((acc, cur, i) => `${acc}${escVal(values[i])}${cur}`, firstStr);
 
 export const escapeNames = (key: string): string =>

@@ -1,4 +1,14 @@
-import mysql, { PoolOptions, Pool, OkPacket, PoolConnection } from 'mysql2';
+import mysql, {
+	PoolOptions,
+	Pool,
+	OkPacket,
+	PoolConnection,
+	Connection,
+	ConnectionOptions,
+} from 'mysql2';
+import mysqldump from 'mysqldump';
+import fs from 'fs';
+import { mysqlSplitterOptions, splitQuery } from 'dbgate-query-splitter';
 import { SelectOptions } from '../query_builder/select/types';
 import {
 	generateQueryFromPreparedStatement,
@@ -6,7 +16,7 @@ import {
 	PreparedStatement,
 } from '../query_builder/types';
 import { isNotEmptyString, putBackticks } from '../query_builder/utils';
-import query_builder from '../query_builder';
+import query_builder, { escStr } from '../query_builder';
 import {
 	DataPacket,
 	DataSelectOptions,
@@ -18,8 +28,9 @@ import {
 	GetPoolConnectionCallback,
 	GetPoolConnectionOptions,
 	DatabaseSelected,
+	defaultGetPoolConnectionOptions,
 } from './types';
-import { arrayUnflat, group } from './utils';
+import { arrayUnflat, group, statementsMerge } from './utils';
 import { ConditionOptions } from '../query_builder/select/conditionals/types';
 import { DeleteOptions } from '../query_builder/delete/types';
 import { UpdateOptions, UpdateValues } from '../query_builder/update/types';
@@ -28,12 +39,14 @@ import {
 	InsertRows,
 	isInsertRows,
 } from '../query_builder/insert/types';
+import { exec } from 'child_process';
 
 class DataAccessObject {
 	protected connectionData: PoolOptions;
 	protected pool: Pool;
 	protected options: DataAccessObjectOptions;
 	protected executionMethod: Function;
+	protected multipleStatementsPool: Pool;
 
 	constructor(
 		connectionData: PoolOptions,
@@ -41,11 +54,77 @@ class DataAccessObject {
 	) {
 		this.options = { ...defaultDataAccessObjectOptions, ...options };
 		this.connectionData = connectionData;
-		this.pool = mysql.createPool(connectionData);
+		this.pool = mysql.createPool({
+			...connectionData,
+			multipleStatements: false,
+		});
+		this.multipleStatementsPool = mysql.createPool({
+			...connectionData,
+			multipleStatements: true,
+		});
 		this.executionMethod =
 			this.options.usePreparedStatements === true
 				? this.execute
 				: this.query;
+	}
+
+	public async dumpDatabase(
+		database: string,
+		filePath: string
+	): Promise<void> {
+		return new Promise((resolve, reject) => {
+			const { host, user, password, port } = this.connectionData;
+			exec(
+				`mysqldump -h ${host}${port ? ` -P ${port}` : ''} -u ${user}${
+					password ? ` -p${password}` : ''
+				} ${database} > "${filePath}"`,
+				(err) => {
+					if (err) return reject(err);
+					resolve();
+				}
+			);
+		});
+	}
+
+	/**
+	 * @description Will drop and recreate a database.
+	 */
+	public async emptyDatabase(database: string) {
+		await this.query(`DROP DATABASE IF EXISTS ${putBackticks(database)};`);
+		await this.query(`CREATE DATABASE ${putBackticks(database)};`);
+	}
+
+	/**
+	 * @description Will create new database from dump file (if database alredy exists it will be emptied).
+	 * @param database Database to be created or emptied
+	 * @param dumpFilePath Path to dump file
+	 */
+	public async loadDump(database: string, dumpFilePath: string) {
+		await this.emptyDatabase(database);
+		const dump = fs.readFileSync(dumpFilePath, 'utf8');
+
+		const dumpStatements = splitQuery(
+			dump,
+			mysqlSplitterOptions
+		) as Array<string>;
+		const maxAllowedPacket = parseInt(
+			await this.getServerVariable('max_allowed_packet')
+		);
+
+		if (maxAllowedPacket && typeof maxAllowedPacket === 'number') {
+			const statementGroups = statementsMerge(
+				dumpStatements,
+				maxAllowedPacket / 2
+			);
+			await this.getPoolConnection(
+				async (conn) => {
+					for (const statementGroup of statementGroups) {
+						await this.connQuery(conn, statementGroup);
+					}
+				},
+				{ database, multipleStatements: true }
+			);
+		}
 	}
 
 	/**
@@ -232,20 +311,29 @@ class DataAccessObject {
 		callback: GetPoolConnectionCallback,
 		opts?: GetPoolConnectionOptions
 	) {
+		const { multipleStatements, database } = {
+			...defaultGetPoolConnectionOptions,
+			...opts,
+		};
 		return new Promise((resolve, reject) => {
-			this.pool.getConnection(async (err, conn) => {
+			(multipleStatements === true
+				? this.multipleStatementsPool
+				: this.pool
+			).getConnection(async (err, conn) => {
 				if (err) {
 					conn.release();
 					reject(err);
 					return;
 				}
 				const shouldChangeDatabase =
-					isNotEmptyString(opts?.database) &&
-					opts?.database !== this.connectionData.database;
+					isNotEmptyString(database) &&
+					database !== this.connectionData.database;
 
 				// Change to the desired database
 				if (shouldChangeDatabase) {
-					conn.changeUser({ database: opts?.database as string });
+					await this.connChangeUser(conn, {
+						database: database as string,
+					});
 				}
 				resolve(await callback(conn));
 				// Change back to the original connection database
@@ -253,7 +341,9 @@ class DataAccessObject {
 					shouldChangeDatabase &&
 					isNotEmptyString(this.connectionData.database)
 				) {
-					conn.changeUser({ database: this.connectionData.database });
+					await this.connChangeUser(conn, {
+						database: this.connectionData.database,
+					});
 				}
 				conn.release();
 			});
@@ -276,7 +366,16 @@ class DataAccessObject {
 		});
 	}
 
-	private connQuery(conn: PoolConnection, sql: string | PreparedStatement) {
+	private connQuery(
+		conn: Connection,
+		sql: string | PreparedStatement
+	): Promise<
+		| mysql.RowDataPacket[]
+		| mysql.RowDataPacket[][]
+		| mysql.OkPacket
+		| mysql.OkPacket[]
+		| mysql.ResultSetHeader
+	> {
 		return new Promise((resolve, reject) => {
 			conn.query(
 				isPreparedStatement(sql)
@@ -287,6 +386,25 @@ class DataAccessObject {
 					resolve(result);
 				}
 			);
+		});
+	}
+
+	private async getServerVariable(variableName: string) {
+		const result = (await this.query(
+			escStr`SHOW VARIABLES LIKE ${variableName};`
+		)) as DataPacket;
+		return result[0]?.Value as string;
+	}
+
+	private connChangeUser(
+		conn: Connection,
+		opts: ConnectionOptions
+	): Promise<void> {
+		return new Promise((resolve, reject) => {
+			conn.changeUser(opts, (err) => {
+				if (err) return reject(err);
+				resolve();
+			});
 		});
 	}
 }
