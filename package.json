@@ -1,15 +1,12 @@
 {
 	"name": "mysql-all-in-one",
-	"files": ["dist/*"],
-	"version": "3.0.2",
+	"version": "3.0.4",
 	"description": "A package that allows you to have a complete interaction with a MYSQL database, allowing to connect to the database, retrieve data and create queries.",
 	"main": "index.js",
 	"scripts": {
-		"tsc": "tsc",
-		"test": "echo \"Error: no test specified\" && exit 1",
-		"prepublishOnly": "npm run tsc && cp -r ./dist/* . && rm -rf ./dist",
-  		"postpublish": "git clean -fd",
-		"prepare": "npm run tsc"
+		"compile": "tsc",
+		"preBuildPackage": "npm run compile && node dist/SetupPackage.js",
+		"publishPackage": "npm run preBuildPackage && cd dist && npm publish"
 	},
 	"repository": {
 		"type": "git",
