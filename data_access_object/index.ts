@@ -66,6 +66,15 @@ class DataAccessObject {
 			this.options.usePreparedStatements === true
 				? this.execute
 				: this.query;
+
+		this.getPoolConnection(() => {
+			//Connection is OK
+		}).catch((err) => {
+			console.log(
+				'Could not start connection, check your connection credencials.'
+			);
+			throw err;
+		});
 	}
 
 	public async dumpDatabase(
@@ -321,7 +330,7 @@ class DataAccessObject {
 				: this.pool
 			).getConnection(async (err, conn) => {
 				if (err) {
-					conn.release();
+					conn?.release();
 					reject(err);
 					return;
 				}
@@ -354,8 +363,6 @@ class DataAccessObject {
 		conn: PoolConnection,
 		preparedStatement: PreparedStatement
 	) {
-		console.log(preparedStatement);
-
 		return new Promise((resolve, reject) => {
 			conn.execute(
 				preparedStatement.statement,
