@@ -7,17 +7,22 @@ export const defaultInsertOptions: InsertOptions = {
 
 export interface InsertOptions {
 	/**
-	 * @description Will add IGNORE modifier.
+	 * @description Adds IGNORE modifier if true.
 	 * @default false
 	 */
 	ignore?: boolean;
 	/**
-	 * @description Will intert only the columns specified on this array. If no value is informed will use the keys of first InsertRow object as columns to insert.
+	 * @description Interts only the columns specified on this array. If no value is informed will use the keys of the first InsertRow object as columns to insert.
+	 * @default null
 	 */
 	columns?: Array<string>;
 	/**
-	 * @description If true will return a PreparedStament object
+	 * @description Returns a PreparedStament object if true
 	 * @default false
+	 * @example ({
+	 * statement: "INSERT INTO `table` (id, name) VALUES (?,?)",
+	 * values: [1, "John"]
+	 * })
 	 */
 	returnPreparedStatement?: boolean;
 }

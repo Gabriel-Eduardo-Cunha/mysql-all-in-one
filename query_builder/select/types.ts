@@ -46,8 +46,12 @@ export interface SelectOptions {
 	limit?: number;
 	offset?: number;
 	/**
-	 * @description If true will return a PreparedStament object
+	 * @description Returns a PreparedStament object if true
 	 * @default false
+	 * @example ({
+	 * statement: "SELECT * FROM `table` WHERE id = ? AND name LIKE ?",
+	 * values: [3, "John"]
+	 * })
 	 */
 	returnPreparedStatement?: boolean;
 }

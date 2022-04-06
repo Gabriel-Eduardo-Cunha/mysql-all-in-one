@@ -51,6 +51,12 @@ export const tableObject = (
 	return { table: '', alias: '', values: [] };
 };
 
+/**
+ *
+ * @param opts Select Object structure
+ * @returns SELECT SQL Query
+ * @example select({})
+ */
 const select = (opts: SelectOptions): PreparedStatement => {
 	const {
 		from,

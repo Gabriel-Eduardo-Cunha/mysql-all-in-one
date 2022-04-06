@@ -6,7 +6,6 @@ import mysql, {
 	Connection,
 	ConnectionOptions,
 } from 'mysql2';
-import mysqldump from 'mysqldump';
 import fs from 'fs';
 import { mysqlSplitterOptions, splitQuery } from 'dbgate-query-splitter';
 import { SelectOptions } from '../query_builder/select/types';
@@ -41,6 +40,10 @@ import {
 } from '../query_builder/insert/types';
 import { exec } from 'child_process';
 
+/**
+ * @description With a DataAccessObject instance is possible to execute commands, dump databases and load dumps (or any .sql file)
+ * @param {PoolOptions} connectionData
+ */
 class DataAccessObject {
 	protected connectionData: PoolOptions;
 	protected pool: Pool;
@@ -48,6 +51,17 @@ class DataAccessObject {
 	protected executionMethod: Function;
 	protected multipleStatementsPool: Pool;
 
+	/**
+	 * @description With this instance is possible to execute commands (SELECT, INSERT, UPDATE, DELETE and any query in general), dump databases and load dumps (or any .sql file)
+	 * @param connectionData Information to create a connection. DataAccessObject uses a mysql2 pool behind the scenes, see: https://www.npmjs.com/package/mysql2#using-connection-pools.
+	 * @param options Extra options like `usePreparedStatements`
+	 * @example const dao = new DataAccessObject({
+	 * host: 'localhost',
+	 * user: 'root',
+	 * port: 3306,
+	 * password: '',
+	 * });
+	 */
 	constructor(
 		connectionData: PoolOptions,
 		options?: DataAccessObjectOptions
@@ -77,6 +91,12 @@ class DataAccessObject {
 		});
 	}
 
+	/**
+	 * @description Creates a dump sql file.
+	 * @param database Database to dump
+	 * @param filePath File to output the dump (Won't create the folders if they don't exists).
+	 * @example dumpDatabase('mydatabase', './folder/mydatabase.sql');
+	 */
 	public async dumpDatabase(
 		database: string,
 		filePath: string
@@ -97,6 +117,8 @@ class DataAccessObject {
 
 	/**
 	 * @description Will drop and recreate a database.
+	 * @param database Database to empty
+	 * @example emptyDatabase('mydatabase');
 	 */
 	public async emptyDatabase(database: string) {
 		await this.query(`DROP DATABASE IF EXISTS ${putBackticks(database)};`);
@@ -104,9 +126,10 @@ class DataAccessObject {
 	}
 
 	/**
-	 * @description Will create new database from dump file (if database alredy exists it will be emptied).
+	 * @description Creates a new database from dump file (WARNING: if the database alredy exists it will be emptied).
 	 * @param database Database to be created or emptied
-	 * @param dumpFilePath Path to dump file
+	 * @param dumpFilePath Path to the dump file
+	 * @example loadDump('mydatabase', './folder/mydatabase.sql');
 	 */
 	public async loadDump(database: string, dumpFilePath: string) {
 		await this.emptyDatabase(database);
@@ -137,7 +160,16 @@ class DataAccessObject {
 	}
 
 	/**
-	 * @description Will execute select command as a prepared statement.
+	 * @description Executes select command as a prepared statement and return its results.
+	 * @param selectOpts Select object structure.
+	 * @param opts Extra options about the command like `database`, `returnMode`, ...
+	 * @example select({
+	 * columns: ['id', 'foo', 'bar'],
+	 * from: 'table',
+	 * where: {id: 1},
+	 * }, {
+	 * database: 'foo',
+	 * });
 	 */
 	public async select(
 		selectOpts: SelectOptions,
@@ -193,8 +225,12 @@ class DataAccessObject {
 	}
 
 	/**
-	 * @description Will execute delete command as a prepared statement.
-	 * @returns Number of deleted rows;
+	 * @description Executes delete command as a prepared statement and return number of rows deleted.
+	 * @param table Table to delete from.
+	 * @param whereOpts Optional where object to filter delete.
+	 * @param opts Extra delete options like `ignore`, `quick`
+	 * @returns Number of deleted rows
+	 * @example delete('table', {id: 5}, {ignore: true});
 	 */
 	public async delete(
 		table: string,
@@ -212,8 +248,13 @@ class DataAccessObject {
 	}
 
 	/**
-	 * @description Will execute update command as a prepared statement.
-	 * @returns Number of updated rows;
+	 * @description Executes update command as a prepared statement and return the number of affected rows.
+	 * @param table Target table.
+	 * @param values Values to be updated (associative column: value).
+	 * @param whereOpts Optional where object to filter update.
+	 * @param opts Extra update options like `ignore`, `order`, `limit`
+	 * @returns Number of affected rows;
+	 * @example update('table', {name: 'foo', finished: 1}, {id: 3}, {ignore: true});
 	 */
 	public async update(
 		table: string,
@@ -235,7 +276,11 @@ class DataAccessObject {
 
 	/**
 	 * @description Will execute insert command as a prepared statement, by default will insert one row at a time, if you need to insert a large number of rows specify the option `rowsPerStatement` to insert more than one row per statement increassing performance.
-	 * @returns Number of updated rows;
+	 * @param table Target table to insert.
+	 * @param rows One or multiple rows to insert.
+	 * @param opts Extra insert options like `rowsPerStatement`, `ignore`, `columns`.
+	 * @returns Inserted ids (if);
+	 * @example insert('table', [{foo: 'bar1'}, {foo: 'bar2'}], {ignore: true});
 	 */
 	public async insert(
 		table: string,
@@ -290,10 +335,11 @@ class DataAccessObject {
 	}
 
 	/**
-	 * @description Will run a query and return it's results, this command don't prepare and execute the statement.
+	 * @description Runs a query and return it's results, this command don't prepare and execute the statement.
 	 * @param sql Query to execute.
-	 * @param database Database used during the query execution. If null will use default connection database passed on connectionData from DAO object.
+	 * @param database Database selected during the query execution. If null will use default connection database passed on connectionData from DAO object.
 	 * @returns Query response.
+	 * @example query('SELECT * FROM `table`, 'mydatabase');
 	 */
 	public async query(sql: string | PreparedStatement, database?: string) {
 		return await this.getPoolConnection(

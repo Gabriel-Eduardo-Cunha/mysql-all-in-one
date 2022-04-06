@@ -1,10 +1,6 @@
 import { PoolConnection } from 'mysql2';
 import { isArrayOfStrings, SqlValues } from '../query_builder/types';
 
-/**
- * @description Key is the new column inside the array group and the value is the actual column name returned from query.
- * @example {id: 'userId'}
- */
 interface RenamedColumns {
 	[new_name: string]: string;
 }
@@ -15,11 +11,6 @@ export const isRenamedColumns = (val: any): val is RenamedColumns =>
 	!Array.isArray(val) &&
 	isArrayOfStrings(Object.values(val));
 
-/**
- * @description Key is the group name and the value is either an Array of column names or an object renaming the columns.
- * @example {users: {id: 'userId', name: 'userName'}}
- * >>> users: [{id: 1, name: 'Foo'}, {id: 2, name: 'Bar'}]
- */
 export interface ColumnGroups {
 	[group_name: string]: Array<string> | RenamedColumns;
 }
@@ -68,14 +59,55 @@ export interface DataSelectOptions {
 	specificColumn?: string;
 
 	/**
-	 * @description Special group, will group repeated rows caused by multiple joins
+	 * @description Groups repeated rows caused by multiple joins (That is totaly different from SQL GROUP BY, it will group data after the rows are returned from server). When dealing with multiple joins, sometimes your rows may be repeated, forcing you to group the data (if you group using SQL GROUP BY, some information may be lost. To avoid losing data you need to group rows after they are returned). That option will create arrays groups of your joined data.
 	 *
+	 * @example
+	 * ({ groupData: {
+	 * by: 'id',
+	 * columnGroups: {
+	 * foos: ['fooId', 'fooName'] // Arrays don't allow column renaming
+	 * bars: {id: 'barId', name: 'barName'} // Objects keys is the new column name. Value is the old column name, returned from the query.
+	 * }
+	 * }
+	 * })
+	 * // Repeated data pattern caused by multiple joins (in this case on table foo and table bar)
+	 * const inputExample = [
+	 * {id: 1, fooId: 3, fooName: "John", barId: 1, barName: "Anne"},
+	 * {id: 1, fooId: 4, fooName: "Robert", barId: 1, barName: "Anne"},
+	 * {id: 1, fooId: 3, fooName: "John", barId: 2, barName: "Clair"},
+	 * {id: 1, fooId: 4, fooName: "Robert", barId: 2, barName: "Clair"},
+	 * {id: 2, fooId: 1, fooName: "Honey", barId: 3, barName: "Bee"},
+	 * {id: 2, fooId: 2, fooName: "Comb", barId: 3, barName: "Bee"},
+	 * ]
+	 * const outputExample = [
+	 * {
+	 * 	id: 1,
+	 * 	foos: [{fooId: 3, fooName: "John"}, {fooId: 4, fooName: "Robert"}],
+	 * 	bars: [{id: 1, name: "Anne"}, {id:2, name: "Clair"}],
+	 * },
+	 * {
+	 * id:2,
+	 * foos: [{fooId: 1, fooName: "Honey"}, {fooId: 2, fooName: "Comb"}],
+	 * bars: [id: 3, name: "Bee"]
+	 * }
+	 * ]
 	 */
 	groupData?: GroupDataOptions;
 }
 
 interface GroupDataOptions {
+	/**
+	 * @description Column that will be used to confirm row indentity (usually the primary key like an `id`)
+	 * @example by: 'id'
+	 */
 	by: string;
+	/**
+	 * @description Column groups that will be formed on each result row.
+	 * @example columnGroups: {
+	 * foos: ['fooId', 'fooName'] // Arrays don't allow column renaming
+	 * bars: {id: 'barId', name: 'barName'} // Objects keys is the new column name and the value is the column name returned from the query.
+	 * }
+	 */
 	columnGroups: ColumnGroups;
 }
 
@@ -91,8 +123,8 @@ export const isGroupDataOptions = (val: any): val is GroupDataOptions =>
 
 export interface InsertOptionsDAO {
 	/**
-	 * @description If set to a number greater than 0 will insert multiple rows at once. Will increase the query execution for larger number of rows, but will disable inserted ids return.
-	 * @default undefined
+	 * @description Inserts multiple rows at once if set to a number greater than 0. Increases performance, but disables inserted ids return.
+	 * @default null
 	 */
 	rowsPerStatement?: number;
 }
@@ -102,9 +134,9 @@ export const defaultDataAccessObjectOptions: DataAccessObjectOptions = {
 };
 export interface DataAccessObjectOptions {
 	/**
+	 * @description Prepare and execute commands like `select`, `insert`, `delete` and `update` for a better performance and security (Do not apply to queries executed using `query` function). If, for some reason, you will need to execute a lot of different queries, causing it to reach server `max_prepared_stmt_count`, just set this option to false.
+	 * @info npm `mysql2` does the prepared statements management, it will not prepare the same statement twice for the same connection. See: https://www.npmjs.com/package/mysql2#using-prepared-statements
 	 * @default true
-	 * @description Will prepare and execute commands like `select`, `insert`, `delete` and `update` for a better performance and safety (Do not apply to `query` function). If for some reason you will execute too many different queries that may reach your `max_prepared_stmt_count` set this option to false.
-	 * @info `mysql2` does the prepared statements management, it will not prepare the same statement twice on the same connection. See: https://www.npmjs.com/package/mysql2#using-prepared-statements
 	 */
 	usePreparedStatements?: boolean;
 }

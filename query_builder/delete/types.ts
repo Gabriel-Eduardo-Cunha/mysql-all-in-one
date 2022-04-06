@@ -5,18 +5,22 @@ export const defaultDeleteOptions: DeleteOptions = {
 };
 export interface DeleteOptions {
 	/**
-	 * @description Will add IGNORE modifier.
+	 * @description Adds IGNORE modifier if true.
 	 * @default false
 	 */
 	ignore?: boolean;
 	/**
-	 * @description Will add QUICK modifier.
+	 * @description Adds QUICK modifier if true.
 	 * @default false
 	 */
 	quick?: boolean;
 	/**
-	 * @description If true will return a PreparedStament object
+	 * @description Returns a PreparedStament object if true
 	 * @default false
+	 * @example ({
+	 * statement: DELETE FROM `table` WHERE id = ? OR name LIKE ?",
+	 * values: [3, "John"]
+	 * })
 	 */
 	returnPreparedStatement?: boolean;
 }

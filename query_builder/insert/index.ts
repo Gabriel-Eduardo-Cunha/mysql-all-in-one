@@ -51,6 +51,15 @@ const buildColumns = (rows: InsertRows, columns?: Array<string>): string => {
 		.join(',')})`;
 };
 
+/**
+ *
+ * @param table Table to insert
+ * @param rows An array of Objects or a single object (keys are the column names)
+ * @param opts Extra insert options like `ignore`
+ * @returns INSERT INTO SQL Query
+ * @example insert('table', [{id:1, name: "John"}, {id:2, name: "Anne"}], {ignore:true});
+ * >>> "INSERT IGNORE INTO `table` (`id`,`name`) VALUES (1,'John'),(2,'Anne');"
+ */
 const insert = (
 	table: string,
 	rows: InsertRows,

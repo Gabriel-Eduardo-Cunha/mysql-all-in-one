@@ -7,6 +7,15 @@ import {
 import { escapeNames, extractTableAlias } from '../utils';
 import { defaultDeleteOptions, DeleteOptions } from './types';
 
+/**
+ * @description Delete from query.
+ * @param table Table of delete from.
+ * @param whereOpts Optional where object to filter deleted data.
+ * @param opts Extra delete options like `ignore`, `quick`
+ * @returns Delete from SQL query.
+ * @example deleteFrom('table', {id: 5}, {ignore: true});
+ * >>> "DELETE IGNORE FROM `table` WHERE (`table`.`id` = 5);"
+ */
 const deleteFrom = (
 	table: string,
 	whereOpts?: ConditionOptions,

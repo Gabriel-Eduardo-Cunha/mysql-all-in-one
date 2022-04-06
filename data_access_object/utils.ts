@@ -7,31 +7,6 @@ import {
 	RowDataPacket,
 } from './types';
 
-/**
- *
- * @param data data from database
- * @param by base column to group
- * @param columnGroups groups that will form based on repeated columns
- * @example group(
-	[
-		{ id: 1, userId: 1, userName: 'John', carBrand: 'Tesla' },
-		{ id: 1, userId: 1, userName: 'John', carBrand: 'Volkswagen' },
-		{ id: 1, userId: 2, userName: 'Bryan', carBrand: 'Tesla' },
-		{ id: 1, userId: 2, userName: 'Bryan', carBrand: 'Volkswagen' },
-		{ id: 2, userId: 1, userName: 'Ana', carBrand: 'Volvo' },
-		{ id: 2, userId: 1, userName: 'Ana', carBrand: 'Volkswagen' },
-	],
-	'id',
-	{
-		users: { id: 'userId', name: 'userName' },
-		cars: { brand: 'carBrand' },
-	}
-)
- * 	users: {id: 'userId', name: 'userName'},
- * 	cars: {brand: 'carBrand'}
- * })
- * @returns Grouped Data
- */
 export const group = (
 	data: DataPacket,
 	by: string,

@@ -14,6 +14,16 @@ import {
 	UpdateValues,
 } from './types';
 
+/**
+ *
+ * @param table Table to update
+ * @param values New values, Object where keys are the columns to be updated
+ * @param whereOpts Where object
+ * @param opts Extra update options like `ignore`, `order`, `limit`
+ * @returns UPDATE SQL Query
+ * @example update('table', {name: "John", bornData: new Date(2020,8,30)}, {id: 1})
+ * >>> "UPDATE `table` SET `name` = 'John',`bornData` = '2020-09-30 00:00:00.000' WHERE (`table`.`id` = 1);"
+ */
 const update = (
 	table: string,
 	values: UpdateValues,

@@ -19,22 +19,26 @@ export const defaultUpdateOptions: UpdateOptions = {
 
 export interface UpdateOptions {
 	/**
-	 * @description Will add IGNORE modifier.
+	 * @description Adds IGNORE modifier if true
 	 * @default false
 	 */
 	ignore?: boolean;
 	/**
-	 * @description Will add ORDER BY modifier
+	 * @description Adds ORDER BY modifier if true
 	 */
 	order?: SelectOrder;
 	/**
-	 * @description Will add LIMIT modifier
+	 * @description Adds LIMIT modifier if true
 	 */
 	limit?: number;
 
 	/**
-	 * @description If true will return a PreparedStament object
+	 * @description Returns a PreparedStament object if true
 	 * @default false
+	 * @example ({
+	 * statement: UPDATE `table` SET name = ? WHERE id = ? OR name LIKE ?",
+	 * values: ["Anne", 3, "John"]
+	 * })
 	 */
 	returnPreparedStatement?: boolean;
 }
