@@ -1,10 +1,13 @@
 {
 	"name": "mysql-all-in-one",
-	"version": "1.5.3",
+	"files": ["./dist/*"],
+	"version": "2.0.0",
 	"description": "A package that allows you to have a complete interaction with a MYSQL database, allowing to connect to the database, retrieve data and create queries.",
 	"main": "index.js",
 	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1"
+		"tsc": "tsc",
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"prepare": "npm run tsc"
 	},
 	"repository": {
 		"type": "git",
@@ -26,7 +29,6 @@
 	"homepage": "https://github.com/Gabriel-Eduardo-Cunha/mysql-all-in-one#readme",
 	"dependencies": {
 		"dbgate-query-splitter": "4.6.0",
-		"iconv-lite": "^0.6.3",
 		"lodash": "4.17.21",
 		"mysql2": "2.3.3",
 		"mysqldump": "3.2.0",
