@@ -4,7 +4,12 @@ import {
 	PreparedStatement,
 	SqlValues,
 } from '../../types';
-import { escapeNames, safeApplyAlias, sqlExpression } from '../../utils';
+import {
+	escapeNames,
+	escVal,
+	safeApplyAlias,
+	sqlExpression,
+} from '../../utils';
 import {
 	ConditionOptions,
 	isColumnRelationObject,
@@ -156,12 +161,10 @@ const create_conditions = (
 			}
 
 			if (is !== undefined) {
-				prepStatementValues.push(is);
-				return `${column} IS ?`;
+				return `${column} IS ${escVal(is)}`;
 			}
 			if (isnot !== undefined) {
-				prepStatementValues.push(isnot);
-				return `${column} IS NOT ?`;
+				return `${column} IS NOT ${escVal(isnot)}`;
 			}
 
 			if (safeNullEqual !== undefined) {
@@ -200,10 +203,10 @@ const create_conditions = (
 			}
 			return;
 		}
-		prepStatementValues.push(val);
 		if (val === null || val === true || val === false) {
-			return `${column} IS ?`;
+			return `${column} IS ${escVal(val)}`;
 		}
+		prepStatementValues.push(val);
 		return `${column} = ?`;
 	};
 

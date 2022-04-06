@@ -354,6 +354,8 @@ class DataAccessObject {
 		conn: PoolConnection,
 		preparedStatement: PreparedStatement
 	) {
+		console.log(preparedStatement);
+
 		return new Promise((resolve, reject) => {
 			conn.execute(
 				preparedStatement.statement,
