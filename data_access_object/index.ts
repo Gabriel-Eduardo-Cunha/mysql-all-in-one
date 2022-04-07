@@ -5,6 +5,7 @@ import mysql, {
 	PoolConnection,
 	Connection,
 	ConnectionOptions,
+	RowDataPacket,
 } from 'mysql2';
 import fs from 'fs';
 import { mysqlSplitterOptions, splitQuery } from 'dbgate-query-splitter';
@@ -13,6 +14,7 @@ import {
 	generateQueryFromPreparedStatement,
 	isPreparedStatement,
 	PreparedStatement,
+	SqlValues,
 } from '../query_builder/types';
 import { isNotEmptyString, putBackticks } from '../query_builder/utils';
 import query_builder, { escStr } from '../query_builder';
@@ -194,30 +196,36 @@ class DataAccessObject {
 		}
 		switch (returnMode) {
 			case 'normal':
-				return resultSet;
+				return resultSet as DataPacket;
 			case 'firstRow':
-				return resultSet[0];
+				return resultSet[0] as RowDataPacket;
 			case 'firstColumn':
-				return resultSet.map((row) => Object.values(row)[0]);
+				return resultSet.map(
+					(row) => Object.values(row)[0]
+				) as Array<SqlValues>;
 			case 'firstValue':
 				const firstRowValues = Object.values(resultSet[0]);
-				return firstRowValues.length !== 0 ? firstRowValues[0] : null;
+				return firstRowValues.length !== 0
+					? (firstRowValues[0] as SqlValues)
+					: null;
 			case 'specific':
 				if (specificRow === undefined && specificColumn === undefined)
-					return resultSet;
+					return resultSet as DataPacket;
 				if (
 					specificRow !== undefined &&
 					typeof specificRow === 'number' &&
 					resultSet.length > specificRow
 				) {
-					return resultSet[specificRow];
+					return resultSet[specificRow] as RowDataPacket;
 				} else if (
 					!!specificColumn &&
 					typeof specificColumn === 'string' &&
 					resultSet.length !== 0 &&
 					resultSet[0][specificColumn] !== undefined
 				) {
-					return resultSet.map((row) => row[specificColumn]);
+					return resultSet.map(
+						(row) => row[specificColumn]
+					) as Array<SqlValues>;
 				}
 			default:
 				return null;
