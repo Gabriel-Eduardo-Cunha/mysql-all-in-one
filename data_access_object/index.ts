@@ -13,6 +13,7 @@ import { SelectOptions } from '../query_builder/select/types';
 import {
 	generateQueryFromPreparedStatement,
 	isPreparedStatement,
+	isSqlValues,
 	PreparedStatement,
 	SqlValues,
 } from '../query_builder/types';
@@ -30,6 +31,9 @@ import {
 	GetPoolConnectionOptions,
 	DatabaseSelected,
 	defaultGetPoolConnectionOptions,
+	UpsertRow,
+	UpsertOptions,
+	defaultUpsertOptions,
 } from './types';
 import { arrayUnflat, group, statementsMerge } from './utils';
 import { ConditionOptions } from '../query_builder/select/conditionals/types';
@@ -135,10 +139,20 @@ class DataAccessObject {
 	 */
 	public async loadDump(database: string, dumpFilePath: string) {
 		await this.emptyDatabase(database);
-		const dump = fs.readFileSync(dumpFilePath, 'utf8');
+		await this.loadSqlFile(database, dumpFilePath);
+	}
 
-		const dumpStatements = splitQuery(
-			dump,
+	/**
+	 * @description Runs statements inside sql file on a specific database.
+	 * @param database Database selected during statements execution.
+	 * @param sqlFilePath Path to the sql file
+	 * @example loadSqlFile('mydatabase', './folder/mysqlstatements.sql');
+	 */
+	public async loadSqlFile(database: string, sqlFilePath: string) {
+		const sql = fs.readFileSync(sqlFilePath, 'utf8');
+
+		const sqlStatements = splitQuery(
+			sql,
 			mysqlSplitterOptions
 		) as Array<string>;
 		const maxAllowedPacket = parseInt(
@@ -147,7 +161,7 @@ class DataAccessObject {
 
 		if (maxAllowedPacket && typeof maxAllowedPacket === 'number') {
 			const statementGroups = statementsMerge(
-				dumpStatements,
+				sqlStatements,
 				maxAllowedPacket / 2
 			);
 			await this.getPoolConnection(
@@ -340,6 +354,18 @@ class DataAccessObject {
 				: insertedIds;
 		}
 		return null;
+	}
+
+	public async upsert(table: string, rows: UpsertRow, opts: UpsertOptions) {
+		opts = { ...defaultUpsertOptions, ...opts };
+		if (!isInsertRows(rows) || typeof opts.primaryKey !== 'string')
+			return null;
+		if (!Array.isArray(rows)) rows = [rows];
+		const affectedIds = [];
+		for (const row of rows) {
+			if (row[opts.primaryKey] !== undefined) {
+			}
+		}
 	}
 
 	/**

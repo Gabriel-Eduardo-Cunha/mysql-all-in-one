@@ -1,4 +1,5 @@
 import { PoolConnection } from 'mysql2';
+import { InsertRows } from '../query_builder/insert/types';
 import { isArrayOfStrings, SqlValues } from '../query_builder/types';
 
 interface RenamedColumns {
@@ -158,3 +159,16 @@ export interface DatabaseSelected {
 	 */
 	database?: string;
 }
+
+export const defaultUpsertOptions: UpsertOptions = {
+	primaryKey: 'id',
+};
+export interface UpsertOptions {
+	/**
+	 * @description Primary Key. If PK is defined (PK !== undefined) in the UpsertRow object an Update is executed, an Insert otherwise.
+	 * @default "id"
+	 */
+	primaryKey?: string;
+}
+
+export type UpsertRow = InsertRows;

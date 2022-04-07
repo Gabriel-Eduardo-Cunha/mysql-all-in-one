@@ -29,18 +29,20 @@ export interface InsertOptions {
 
 export type InsertRows = Array<InsertRow> | InsertRow;
 
+export const isInsertRow = (val: any): val is InsertRow =>
+	val !== undefined &&
+	val !== null &&
+	typeof val === 'object' &&
+	!Array.isArray(val) &&
+	Object.values(val).length !== 0 &&
+	Object.values(val).every((v) => v === undefined || isSqlValues(v));
+
 export const isInsertRows = (val: any): val is InsertRows =>
 	val !== undefined &&
 	val !== null &&
 	typeof val === 'object' &&
-	((!Array.isArray(val) &&
-		Object.values(val).length !== 0 &&
-		Object.values(val)
-			.map((v) => v === undefined || isSqlValues(v))
-			.every((v: boolean) => v === true)) ||
-		(Array.isArray(val) &&
-			val.length !== 0 &&
-			val.every((v: boolean) => isInsertRows(v))));
+	(isInsertRow(val) ||
+		(Array.isArray(val) && val.every((v) => isInsertRow(v))));
 
 export interface InsertRow {
 	[key: string]: SqlValues | undefined;
