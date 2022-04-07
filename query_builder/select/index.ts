@@ -5,6 +5,7 @@ import where from './conditionals/where';
 import having from './conditionals/having';
 import {
 	defaultSelectOptions,
+	isSelectOptions,
 	SelectOptions,
 	SelectTable,
 	TableObjectReturn,
@@ -14,7 +15,6 @@ import { order } from './order';
 import {
 	generateQueryFromPreparedStatement,
 	PreparedStatement,
-	SqlValues,
 } from '../types';
 
 export const tableObject = (
@@ -31,7 +31,7 @@ export const tableObject = (
 	if (typeof table === 'object') {
 		const entries = Object.entries(table);
 		if (entries.length !== 0) {
-			const [key, val] = Object.entries(table)[0];
+			const [key, val] = entries[0];
 			if (typeof val === 'string')
 				return {
 					table: putBrackets(val),
@@ -69,6 +69,7 @@ const select = (opts: SelectOptions): PreparedStatement => {
 		limit,
 		offset,
 		prependAlias,
+		union,
 	} = { ...defaultSelectOptions, ...opts };
 
 	const prepStatementValues = [];
@@ -107,10 +108,17 @@ const select = (opts: SelectOptions): PreparedStatement => {
 	const sLimit = limit ? ` LIMIT ${limit}` : '';
 	//Offset
 	const sOffset = offset ? ` OFFSET ${offset}` : '';
+	let sUnion = '';
+	if (isSelectOptions(union)) {
+		const { statement: unionStatement, values: unionValues } =
+			select(union);
+		prepStatementValues.push(...unionValues);
+		sUnion = ` UNION ${unionStatement}`;
+	}
 	const prepStatement: PreparedStatement = {
 		statement: `SELECT ${sColumns}${
 			jColumns ? `,${jColumns}` : ''
-		}${sFrom}${sJoin}${sWhere}${sGroup}${sHaving}${sOrder}${sLimit}${sOffset}`,
+		}${sFrom}${sJoin}${sWhere}${sGroup}${sHaving}${sOrder}${sLimit}${sOffset}${sUnion}`,
 		values: prepStatementValues,
 	};
 	return prepStatement;
@@ -125,3 +133,16 @@ const selectStatement = (opts: SelectOptions): PreparedStatement | string => {
 };
 
 export default selectStatement;
+
+console.log(
+	select({
+		columns: ['id', 'name', 'finished'],
+		from: 'client',
+		where: { finished: 1 },
+		union: {
+			columns: ['id', 'name', 'finished'],
+			from: 'user',
+			where: { finished: 1 },
+		},
+	})
+);

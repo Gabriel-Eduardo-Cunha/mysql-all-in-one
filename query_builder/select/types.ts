@@ -17,7 +17,12 @@ export interface ExpressionObject {
 export const isExpressionObject = (val: any): val is ExpressionObject => {
 	return typeof val?.__expression === 'string';
 };
-
+export const isSelectOptions = (val: any): val is SelectOptions =>
+	val !== undefined &&
+	val !== null &&
+	!Array.isArray(val) &&
+	typeof val === 'object' &&
+	(val.columns !== undefined || val.from !== undefined);
 export const defaultSelectOptions: SelectOptions = {
 	prependAlias: true,
 	returnPreparedStatement: false,
@@ -54,6 +59,7 @@ export interface SelectOptions {
 	 * })
 	 */
 	returnPreparedStatement?: boolean;
+	union?: SelectOptions;
 }
 
 export interface TableObjectReturn {

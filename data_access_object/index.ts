@@ -13,7 +13,6 @@ import { SelectOptions } from '../query_builder/select/types';
 import {
 	generateQueryFromPreparedStatement,
 	isPreparedStatement,
-	isSqlValues,
 	PreparedStatement,
 	SqlValues,
 } from '../query_builder/types';
@@ -356,16 +355,34 @@ class DataAccessObject {
 		return null;
 	}
 
+	/**
+	 * @description Executes an update if the primary key column is defined in the row, executes an insert otherwise. (you can define the primary key column passing the name in the option `primaryKey`)
+	 * @param table Table to either update or insert
+	 * @param rows Row to either update or insert
+	 * @param opts Extra options like `primaryKey`
+	 * @returns One or many affected ids
+	 */
 	public async upsert(table: string, rows: UpsertRow, opts: UpsertOptions) {
 		opts = { ...defaultUpsertOptions, ...opts };
-		if (!isInsertRows(rows) || typeof opts.primaryKey !== 'string')
-			return null;
+		const { primaryKey } = opts;
+		if (!isInsertRows(rows) || typeof primaryKey !== 'string') return null;
 		if (!Array.isArray(rows)) rows = [rows];
 		const affectedIds = [];
 		for (const row of rows) {
-			if (row[opts.primaryKey] !== undefined) {
+			if (row[primaryKey] !== undefined) {
+				const where: ConditionOptions = {};
+				where[primaryKey] = row[primaryKey];
+				await this.update(table, row, where);
+				affectedIds.push(row[primaryKey]);
+				continue;
 			}
+			affectedIds.push(await this.insert(table, row));
 		}
+		return affectedIds.length === 0
+			? null
+			: affectedIds.length === 1
+			? affectedIds[0]
+			: affectedIds;
 	}
 
 	/**
