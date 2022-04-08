@@ -2,4 +2,4 @@
 
 All tools that a node developer needs to implements a connection and dataflow in a MYSQL database.
 
-V2.0.0 documentation coming soon.
+V3.0.0 documentation coming soon.

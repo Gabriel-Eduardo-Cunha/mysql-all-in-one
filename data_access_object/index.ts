@@ -373,7 +373,7 @@ class DataAccessObject {
 	public async upsert(
 		table: string,
 		rows: UpsertRow,
-		opts: UpsertOptions & DatabaseSelected
+		opts?: UpsertOptions & DatabaseSelected
 	) {
 		opts = { ...defaultUpsertOptions, ...opts };
 		const { primaryKey, database } = opts;

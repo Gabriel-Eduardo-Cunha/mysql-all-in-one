@@ -12,7 +12,7 @@ import {
 	InsertRow,
 } from './types';
 
-const buildRow = (row: InsertRow, keys: Array<string>): string => {
+const buildRow = (keys: Array<string>): string => {
 	return `(${keys.map((_) => '?').join(',')})`;
 };
 
@@ -29,8 +29,8 @@ const buildInsertRows = (
 
 		return {
 			statement: Array.isArray(rows)
-				? rows.map((row) => buildRow(row, keys)).join(',')
-				: buildRow(rows, keys),
+				? rows.map((_) => buildRow(keys)).join(',')
+				: buildRow(keys),
 			values: Array.isArray(rows)
 				? rows.map((row) => keys.map((key) => row[key])).flat()
 				: keys.map((key) => rows[key]),
