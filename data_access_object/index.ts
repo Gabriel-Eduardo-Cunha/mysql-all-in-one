@@ -256,14 +256,17 @@ class DataAccessObject {
 	public async delete(
 		table: string,
 		whereOpts?: ConditionOptions,
-		opts?: DeleteOptions
+		opts?: DeleteOptions & DatabaseSelected
 	) {
+		const { database } = { ...opts };
+		delete opts?.database;
 		const preparedStatement = query_builder.deleteFrom(table, whereOpts, {
 			...opts,
 			returnPreparedStatement: true,
 		}) as PreparedStatement;
 		const result = (await this.executionMethod(
-			preparedStatement
+			preparedStatement,
+			database
 		)) as OkPacket;
 		return result.affectedRows;
 	}
@@ -281,8 +284,10 @@ class DataAccessObject {
 		table: string,
 		values: UpdateValues,
 		whereOpts?: ConditionOptions,
-		opts?: UpdateOptions
+		opts?: UpdateOptions & DatabaseSelected
 	) {
+		const { database } = { ...opts };
+		delete opts?.database;
 		const preparedStatement = query_builder.update(
 			table,
 			values,
@@ -290,7 +295,8 @@ class DataAccessObject {
 			{ ...opts, returnPreparedStatement: true }
 		) as PreparedStatement;
 		const result = (await this.executionMethod(
-			preparedStatement
+			preparedStatement,
+			database
 		)) as OkPacket;
 		return result.affectedRows;
 	}
@@ -306,13 +312,14 @@ class DataAccessObject {
 	public async insert(
 		table: string,
 		rows: InsertRows,
-		opts?: InsertOptionsDAO & InsertOptions
+		opts?: InsertOptionsDAO & InsertOptions & DatabaseSelected
 	) {
 		opts = { ...opts, returnPreparedStatement: true };
-		const { rowsPerStatement } = {
+		const { rowsPerStatement, database } = {
 			...opts,
-		} as InsertOptionsDAO & InsertOptions;
+		};
 		delete opts?.rowsPerStatement;
+		delete opts?.database;
 		if (isInsertRows(rows)) {
 			if (!Array.isArray(rows)) rows = [rows];
 			if (
@@ -329,7 +336,7 @@ class DataAccessObject {
 						opts
 					) as PreparedStatement;
 
-					await this.executionMethod(preparedStatement);
+					await this.executionMethod(preparedStatement, database);
 				}
 				return null;
 			}
@@ -342,7 +349,8 @@ class DataAccessObject {
 				) as PreparedStatement;
 
 				const result = (await this.executionMethod(
-					preparedStatement
+					preparedStatement,
+					database
 				)) as OkPacket;
 				insertedIds.push(result.insertId);
 			}
@@ -362,9 +370,13 @@ class DataAccessObject {
 	 * @param opts Extra options like `primaryKey`
 	 * @returns One or many affected ids
 	 */
-	public async upsert(table: string, rows: UpsertRow, opts: UpsertOptions) {
+	public async upsert(
+		table: string,
+		rows: UpsertRow,
+		opts: UpsertOptions & DatabaseSelected
+	) {
 		opts = { ...defaultUpsertOptions, ...opts };
-		const { primaryKey } = opts;
+		const { primaryKey, database } = opts;
 		if (!isInsertRows(rows) || typeof primaryKey !== 'string') return null;
 		if (!Array.isArray(rows)) rows = [rows];
 		const affectedIds = [];
@@ -372,11 +384,11 @@ class DataAccessObject {
 			if (row[primaryKey] !== undefined) {
 				const where: ConditionOptions = {};
 				where[primaryKey] = row[primaryKey];
-				await this.update(table, row, where);
+				await this.update(table, row, where, { database });
 				affectedIds.push(row[primaryKey]);
 				continue;
 			}
-			affectedIds.push(await this.insert(table, row));
+			affectedIds.push(await this.insert(table, row, { database }));
 		}
 		return affectedIds.length === 0
 			? null
