@@ -379,16 +379,19 @@ class DataAccessObject {
 		const { primaryKey, database } = opts;
 		if (!isInsertRows(rows) || typeof primaryKey !== 'string') return null;
 		if (!Array.isArray(rows)) rows = [rows];
-		const affectedIds = [];
+		const affectedIds: Array<number> = [];
 		for (const row of rows) {
 			if (row[primaryKey] !== undefined) {
 				const where: ConditionOptions = {};
 				where[primaryKey] = row[primaryKey];
 				await this.update(table, row, where, { database });
-				affectedIds.push(row[primaryKey]);
+				const primaryKeyValue = row[primaryKey];
+				if (typeof primaryKeyValue === 'number')
+					affectedIds.push(primaryKeyValue);
 				continue;
 			}
-			affectedIds.push(await this.insert(table, row, { database }));
+			const insertedId = await this.insert(table, row, { database });
+			if (typeof insertedId === 'number') affectedIds.push(insertedId);
 		}
 		return affectedIds.length === 0
 			? null
