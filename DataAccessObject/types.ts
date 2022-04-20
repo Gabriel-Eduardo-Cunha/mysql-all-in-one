@@ -1,6 +1,10 @@
 import { PoolConnection } from 'mysql2';
 import { InsertRows } from '../QueryBuilder/insert/types';
-import { isArrayOfStrings, SqlValues } from '../QueryBuilder/types';
+import {
+	isArrayOfStrings,
+	SqlValues,
+	isSqlValues,
+} from '../QueryBuilder/types';
 
 interface RenamedColumns {
 	[new_name: string]: string;
@@ -22,11 +26,22 @@ export const isColumnGroups = (val: any): val is ColumnGroups =>
 	!Array.isArray(val) &&
 	Object.values(val).every((v) => isRenamedColumns(v) || isArrayOfStrings(v));
 
+export const isRowDataPacket = (val: any): val is RowDataPacket =>
+	typeof val === 'object' &&
+	!Array.isArray(val) &&
+	val !== null &&
+	Object.values(val).every((v) => isSqlValues(v) || isDataPacket(v));
 export interface RowDataPacket {
 	[key: string]: SqlValues | DataPacket;
 }
 
+export const isDataPacket = (val: any): val is DataPacket =>
+	Array.isArray(val) && val.every((v) => isRowDataPacket(v));
 export type DataPacket = Array<RowDataPacket>;
+
+export const isColumnValues = (val: any): val is ColumnValues =>
+	Array.isArray(val) && val.every((v) => isSqlValues(v));
+type ColumnValues = Array<SqlValues>;
 
 export const defaultDataSelectOptions: DataSelectOptions = {
 	returnMode: 'normal',

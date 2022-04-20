@@ -5,7 +5,6 @@ import mysql, {
 	PoolConnection,
 	Connection,
 	ConnectionOptions,
-	RowDataPacket,
 } from 'mysql2';
 import fs from 'fs';
 import { mysqlSplitterOptions, splitQuery } from 'dbgate-query-splitter';
@@ -13,6 +12,7 @@ import { SelectOptions } from '../QueryBuilder/select/types';
 import {
 	generateQueryFromPreparedStatement,
 	isPreparedStatement,
+	isSqlValues,
 	PreparedStatement,
 	SqlValues,
 } from '../QueryBuilder/types';
@@ -39,6 +39,9 @@ import {
 	UpsertRow,
 	UpsertOptions,
 	defaultUpsertOptions,
+	isRowDataPacket,
+	isDataPacket,
+	isColumnValues,
 } from './types';
 import { arrayUnflat, group, statementsMerge } from './utils';
 import { ConditionOptions } from '../QueryBuilder/select/conditionals/types';
@@ -213,42 +216,56 @@ export class DataAccessObject {
 		if (isGroupDataOptions(groupData)) {
 			resultSet = group(resultSet, groupData.by, groupData.columnGroups);
 		}
+		if (!isDataPacket(resultSet)) return null;
 		switch (returnMode) {
 			case 'normal':
-				return resultSet as DataPacket;
+				return isDataPacket(resultSet) ? resultSet : null;
 			case 'firstRow':
-				return resultSet[0] as RowDataPacket;
+				return isRowDataPacket(resultSet?.[0]) ? resultSet[0] : null;
 			case 'firstColumn':
-				return resultSet.map(
-					(row) => Object.values(row)[0]
-				) as Array<SqlValues>;
+				const columnValues = resultSet.map((row) =>
+					typeof row === 'object'
+						? Object.values(row)?.[0]
+						: undefined
+				);
+				return isColumnValues(columnValues) ? columnValues : null;
 			case 'firstValue':
-				const firstRowValues = Object.values(resultSet[0]);
-				return firstRowValues.length !== 0
-					? (firstRowValues[0] as SqlValues)
+				const firstRow = resultSet[0];
+				if (!isRowDataPacket(firstRow)) return null;
+				const firstRowValues = Object.values(firstRow);
+				return firstRowValues.length !== 0 &&
+					isSqlValues(firstRowValues[0])
+					? firstRowValues[0]
 					: null;
 			case 'specific':
 				if (specificRow === undefined && specificColumn === undefined)
-					return resultSet as DataPacket;
+					return resultSet;
 				if (
 					specificRow !== undefined &&
 					typeof specificRow === 'number' &&
-					resultSet.length > specificRow
+					resultSet.length > specificRow &&
+					isRowDataPacket(resultSet[specificRow])
 				) {
-					return resultSet[specificRow] as RowDataPacket;
-				} else if (
-					!!specificColumn &&
+					return resultSet[specificRow];
+				}
+				if (
+					specificColumn !== undefined &&
 					typeof specificColumn === 'string' &&
 					resultSet.length !== 0 &&
-					resultSet[0][specificColumn] !== undefined
+					resultSet.every(
+						(row) =>
+							isRowDataPacket(row) &&
+							row[specificColumn] !== undefined &&
+							isSqlValues(row[specificColumn])
+					)
 				) {
-					return resultSet.map(
+					const columnValues = resultSet.map(
 						(row) => row[specificColumn]
-					) as Array<SqlValues>;
+					);
+					if (isColumnValues(columnValues)) return columnValues;
 				}
-			default:
-				return null;
 		}
+		return null;
 	}
 
 	/**
