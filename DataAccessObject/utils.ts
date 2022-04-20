@@ -1,4 +1,4 @@
-import { isArrayOfStrings, SqlValues } from '../query_builder/types';
+import { isArrayOfStrings, SqlValues } from '../QueryBuilder/types';
 import _ from 'lodash';
 import {
 	ColumnGroups,

@@ -1,11 +1,11 @@
 {
 	"name": "mysql-all-in-one",
-	"version": "3.0.12",
+	"version": "3.0.17",
 	"description": "A package that allows you to have a complete interaction with a MYSQL database, allowing to connect to the database, retrieve data and create queries.",
 	"main": "index.js",
 	"scripts": {
 		"compile": "tsc",
-		"preBuildPackage": "npm run compile && node dist/SetupPackage.js",
+		"preBuildPackage": "npm run compile && node SetupPackage.js",
 		"publish": "npm run preBuildPackage && cd dist && npm publish"
 	},
 	"repository": {
@@ -14,11 +14,14 @@
 	},
 	"keywords": [
 		"mysql",
-		"database",
+		"safe",
+		"sqlinjection",
 		"query",
-		"data-access-object",
+		"querybuilder",
+		"dataaccessobject",
 		"DAO",
-		"connection"
+		"connection",
+		"multiconnection"
 	],
 	"author": "gabriel_eduardo_cunha",
 	"license": "ISC",

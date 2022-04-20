@@ -1,6 +1,6 @@
 import { PoolConnection } from 'mysql2';
-import { InsertRows } from '../query_builder/insert/types';
-import { isArrayOfStrings, SqlValues } from '../query_builder/types';
+import { InsertRows } from '../QueryBuilder/insert/types';
+import { isArrayOfStrings, SqlValues } from '../QueryBuilder/types';
 
 interface RenamedColumns {
 	[new_name: string]: string;

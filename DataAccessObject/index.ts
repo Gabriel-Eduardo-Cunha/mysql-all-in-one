@@ -9,15 +9,21 @@ import mysql, {
 } from 'mysql2';
 import fs from 'fs';
 import { mysqlSplitterOptions, splitQuery } from 'dbgate-query-splitter';
-import { SelectOptions } from '../query_builder/select/types';
+import { SelectOptions } from '../QueryBuilder/select/types';
 import {
 	generateQueryFromPreparedStatement,
 	isPreparedStatement,
 	PreparedStatement,
 	SqlValues,
-} from '../query_builder/types';
-import { isNotEmptyString, putBackticks } from '../query_builder/utils';
-import query_builder, { escStr } from '../query_builder';
+} from '../QueryBuilder/types';
+import { isNotEmptyString, putBackticks } from '../QueryBuilder/utils';
+import {
+	escStr,
+	select as QuerySelect,
+	insert as QueryInsert,
+	update as QueryUpdate,
+	deleteFrom as QueryDelete,
+} from '../QueryBuilder';
 import {
 	DataPacket,
 	DataSelectOptions,
@@ -35,21 +41,21 @@ import {
 	defaultUpsertOptions,
 } from './types';
 import { arrayUnflat, group, statementsMerge } from './utils';
-import { ConditionOptions } from '../query_builder/select/conditionals/types';
-import { DeleteOptions } from '../query_builder/delete/types';
-import { UpdateOptions, UpdateValues } from '../query_builder/update/types';
+import { ConditionOptions } from '../QueryBuilder/select/conditionals/types';
+import { DeleteOptions } from '../QueryBuilder/delete/types';
+import { UpdateOptions, UpdateValues } from '../QueryBuilder/update/types';
 import {
 	InsertOptions,
 	InsertRows,
 	isInsertRows,
-} from '../query_builder/insert/types';
+} from '../QueryBuilder/insert/types';
 import { exec } from 'child_process';
 
 /**
  * @description With a DataAccessObject instance is possible to execute commands, dump databases and load dumps (or any .sql file)
  * @param {PoolOptions} connectionData
  */
-class DataAccessObject {
+export class DataAccessObject {
 	protected connectionData: PoolOptions;
 	protected pool: Pool;
 	protected options: DataAccessObjectOptions;
@@ -89,7 +95,7 @@ class DataAccessObject {
 		this.getPoolConnection(() => {
 			//Connection is OK
 		}).catch((err) => {
-			console.log(
+			console.error(
 				'Could not start connection, check your connection credencials.'
 			);
 			throw err;
@@ -195,7 +201,7 @@ class DataAccessObject {
 				...defaultDataSelectOptions,
 				...opts,
 			};
-		const prepStatement: PreparedStatement = query_builder.select({
+		const prepStatement: PreparedStatement = QuerySelect({
 			...selectOpts,
 			returnPreparedStatement: true,
 		}) as PreparedStatement;
@@ -260,7 +266,7 @@ class DataAccessObject {
 	) {
 		const { database } = { ...opts };
 		delete opts?.database;
-		const preparedStatement = query_builder.deleteFrom(table, whereOpts, {
+		const preparedStatement = QueryDelete(table, whereOpts, {
 			...opts,
 			returnPreparedStatement: true,
 		}) as PreparedStatement;
@@ -288,12 +294,10 @@ class DataAccessObject {
 	) {
 		const { database } = { ...opts };
 		delete opts?.database;
-		const preparedStatement = query_builder.update(
-			table,
-			values,
-			whereOpts,
-			{ ...opts, returnPreparedStatement: true }
-		) as PreparedStatement;
+		const preparedStatement = QueryUpdate(table, values, whereOpts, {
+			...opts,
+			returnPreparedStatement: true,
+		}) as PreparedStatement;
 		const result = (await this.executionMethod(
 			preparedStatement,
 			database
@@ -330,7 +334,7 @@ class DataAccessObject {
 			) {
 				const rowsGroups = arrayUnflat(rows, rowsPerStatement);
 				for (const rowsGroup of rowsGroups) {
-					const preparedStatement = query_builder.insert(
+					const preparedStatement = QueryInsert(
 						table,
 						rowsGroup,
 						opts
@@ -342,7 +346,7 @@ class DataAccessObject {
 			}
 			const insertedIds = [];
 			for (const row of rows) {
-				const preparedStatement = query_builder.insert(
+				const preparedStatement = QueryInsert(
 					table,
 					row,
 					opts
@@ -529,5 +533,3 @@ class DataAccessObject {
 		});
 	}
 }
-
-export default DataAccessObject;

@@ -133,16 +133,3 @@ const selectStatement = (opts: SelectOptions): PreparedStatement | string => {
 };
 
 export default selectStatement;
-
-console.log(
-	select({
-		columns: ['id', 'name', 'finished'],
-		from: 'client',
-		where: { finished: 1 },
-		union: {
-			columns: ['id', 'name', 'finished'],
-			from: 'user',
-			where: { finished: 1 },
-		},
-	})
-);
