@@ -1,2 +1,2 @@
-export { DataAccessObject } from './DataAccessObject/Q';
+export { DataAccessObject } from './DataAccessObject';
 export * as QueryBuilder from './QueryBuilder';
