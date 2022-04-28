@@ -24,23 +24,26 @@ const join = (join: SelectJoin, alias?: string): JoinReturnObject => {
 			alias: joinAlias,
 			values: tableValues,
 		} = tableObject(table);
+		joinPrepStamentValues.push(...tableValues);
 		if (columns !== undefined) {
 			joinColumns.push(create_columns(columns, joinAlias));
 		}
-		const onPrepStatement = create_conditions(
-			on,
-			alias && joinAlias,
-			alias
-		);
-		joinPrepStamentValues.push(...onPrepStatement.values);
+		let onStatement = '';
+		if (on !== undefined) {
+			const onPrepStatement = create_conditions(
+				on,
+				alias && joinAlias,
+				alias
+			);
+			if (isNotEmptyString(onPrepStatement.statement)) {
+				onStatement = ` ON ${onPrepStatement.statement}`;
+				joinPrepStamentValues.push(...onPrepStatement.values);
+			}
+		}
 		sJoins.push(
 			`${type ? `${type.toUpperCase()} ` : ''}JOIN ${joinExpression}${
 				joinAlias && joinAlias !== joinExpression ? ` ${joinAlias}` : ''
-			}${
-				on && isNotEmptyString(onPrepStatement.statement)
-					? ` ON ${onPrepStatement.statement}`
-					: ''
-			}`
+			}${onStatement}`
 		);
 	});
 	const jColumns = joinColumns.filter((j) => !!j).join(',');
