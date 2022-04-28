@@ -10,8 +10,15 @@ const create_columns = (
 	columns?: SelectColumns,
 	alias?: string
 ): string | undefined => {
-	if (typeof columns === 'string')
-		return safeApplyAlias(escapeNames(columns as string), alias);
+	if (typeof columns === 'string') {
+		if (columns === '*') {
+			return columns;
+		}
+		if (columns.endsWith('.*')) {
+			return `${escapeNames(columns.substring(0, columns.length - 2))}.*`;
+		}
+		return safeApplyAlias(escapeNames(columns), alias);
+	}
 	if (Array.isArray(columns)) {
 		return columns
 			.map((c) => create_columns(c, alias))

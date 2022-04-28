@@ -1,8 +1,7 @@
 {
 	"name": "mysql-all-in-one",
-	"version": "3.1.0",
+	"version": "3.2.0",
 	"description": "A package that allows you to have a complete interaction with a MYSQL database, allowing to connect to the database, retrieve data and create queries.",
-	"main": "index.js",
 	"scripts": {
 		"compile": "tsc",
 		"preBuildPackage": "npm run compile && node SetupPackage.js",
