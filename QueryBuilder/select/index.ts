@@ -78,9 +78,12 @@ const select = (opts: SelectOptions): PreparedStatement => {
 	prepStatementValues.push(...values);
 	const aliasToPrepend = prependAlias === true ? alias : undefined;
 	//Columns
-	const sColumns =
-		columns(columnsOpts, aliasToPrepend) ||
-		(alias && prependAlias === true ? `${alias}.*` : '*');
+	const { statement: sColumns, values: sColumnValues } = columns(
+		columnsOpts,
+		aliasToPrepend
+	);
+	prepStatementValues.push(...sColumnValues);
+
 	//From
 	const sFrom = table
 		? ` FROM ${table}${alias && alias !== table ? ` ${alias}` : ''}`
@@ -88,8 +91,12 @@ const select = (opts: SelectOptions): PreparedStatement => {
 	//Join
 	const {
 		joinPreparedStatement: { statement: sJoin, values: sJoinValues },
-		columnsPreparedStatement: jColumns,
+		columnsPreparedStatement: {
+			statement: jColumns,
+			values: jColumnsValues,
+		},
 	} = join(joinOpts, aliasToPrepend);
+	prepStatementValues.push(...jColumnsValues);
 	prepStatementValues.push(...sJoinValues);
 	//Where
 	const { statement: sWhere, values: sWhereValues } = where(

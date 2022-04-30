@@ -1,6 +1,6 @@
 import mysql from 'mysql2';
 import { ConditionOptions } from './select/conditionals/types';
-import { PreparedStatement, SqlValues } from './types';
+import { SqlColumn, SqlValues } from './types';
 
 /**
  * Escapes a value into a valid mysql String representation
@@ -9,18 +9,32 @@ export const escVal = mysql.escape;
 
 /**
  *
- * @description Tagged template literal function to create sql expressions, will automatically escape interpolated variables to valid sql values;
- * @example sqlExpression`STR_TO_DATE(date, "%d/%m/%Y") = ${new Date(2020, 8, 30)}`
- * >> 'STR_TO_DATE(date, "%d/%m/%Y") = "2020-8-30"'
+ * @description Tagged template literal function to create sql expressions, will automatically escape interpolated variables to valid sql values or if will escape column names if combined um `sqlCol` function;
+ * @example sqlExpression`STR_TO_DATE(${sqlCol('date')}, "%d/%m/%Y") = ${new Date(2020, 8, 30)} AND ${sqlCol('date') > ${sqlCol('another_table.date')`
+ * >> 'STR_TO_DATE(date, "%d/%m/%Y") = "2020-8-30" AND date > '
  */
 export const sqlExpression = (
 	[firstStr, ...rest]: TemplateStringsArray,
-	...values: Array<SqlValues>
-): ConditionOptions => {
-	const statement = rest.reduce((acc, cur) => `${acc}?${cur}`, firstStr);
+	...values: Array<SqlValues | SqlColumn>
+): Record<string, any> => {
+	const statement = rest.reduce(
+		(acc, cur, i) =>
+			`${acc}${
+				values[i] instanceof SqlColumn
+					? safeApplyAlias(
+							escapeNames((values[i] as SqlColumn).column),
+							'__SQL__EXPRESSION__ALIAS__'
+					  )
+					: '?'
+			}${cur}`,
+		firstStr
+	);
+	const prepValues = values.filter(
+		(v) => v instanceof SqlColumn === false
+	) as SqlValues[];
 	return {
 		statement,
-		values,
+		values: prepValues,
 		__is_prep_statement: true,
 	};
 };
@@ -28,11 +42,11 @@ export const sqlExpression = (
 /**
  * @description Tagged template literal function to escape all passed values
  * @example const name = 'Foo'; escStr`name=${name}`;
- * @output "name = 'Foo'"
+ * >> "name = 'Foo'"
  */
 export const escStr = (
 	[firstStr, ...rest]: TemplateStringsArray,
-	...values: Array<any>
+	...values: Array<SqlValues | SqlColumn>
 ): string =>
 	rest.reduce((acc, cur, i) => `${acc}${escVal(values[i])}${cur}`, firstStr);
 
@@ -81,3 +95,12 @@ export const isNotEmptyString = (val: any): val is string =>
 	val !== null &&
 	typeof val === 'string' &&
 	val.length !== 0;
+
+/**
+ *
+ * @description Will return SqlColumn object, that is interpretated as a column, not as a string. Can be used in WHERE, sqlExpression
+ * @example
+ * {where: {date: sqlCol('another_table.date')}}
+ * >> WHERE `date` = `another_table`.`date`
+ */
+export const sqlCol = (column: string): SqlColumn => new SqlColumn(column);

@@ -51,3 +51,23 @@ export const generateQueryFromPreparedStatement = (
 		) || ''
 	);
 };
+
+export class SqlColumn {
+	constructor(public column: string) {}
+}
+
+interface SqlExpressionPreparedStatement {
+	statement: string;
+	values: Array<SqlValues>;
+	__is_prep_statement: boolean;
+}
+
+export const isSqlExpressionPreparedStatement = (
+	val: any
+): val is SqlExpressionPreparedStatement =>
+	val !== null &&
+	typeof val === 'object' &&
+	typeof val.statement === 'string' &&
+	Array.isArray(val.values) &&
+	val.values.every((v: any) => isSqlValues(v)) &&
+	val.__is_prep_statement === true;

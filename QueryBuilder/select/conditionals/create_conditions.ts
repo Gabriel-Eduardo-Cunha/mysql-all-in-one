@@ -1,7 +1,9 @@
 import {
 	emptyPrepStatement,
 	isPreparedStatement,
+	isSqlExpressionPreparedStatement,
 	PreparedStatement,
+	SqlColumn,
 	SqlValues,
 } from '../../types';
 import {
@@ -67,14 +69,23 @@ const create_conditions = (
 	if (typeof value !== 'object')
 		throw `Value must be String or Object type, received type ${typeof value}\n${value}`;
 
-	if (value.__is_prep_statement === true) {
-		delete value.__is_prep_statement;
-		if (isPreparedStatement(value)) {
-			return value;
-		}
+	if (isSqlExpressionPreparedStatement(value)) {
+		value.statement = value.statement
+			.split('__SQL__EXPRESSION__ALIAS__')
+			.join(alias);
+		return { values: value.values, statement: value.statement };
 	}
 
-	const operation = (val: OperatorOptionsObject | any, column: string) => {
+	const operation = (
+		val: OperatorOptionsObject | SqlValues | SqlValues[] | SqlColumn,
+		column: string
+	) => {
+		const colOrVal = (val: SqlValues | SqlColumn): string => {
+			if (val instanceof SqlColumn)
+				return safeApplyAlias(escapeNames(val.column), alias);
+			prepStatementValues.push(val);
+			return '?';
+		};
 		if (val === undefined) return;
 		if (Array.isArray(val)) {
 			prepStatementValues.push(...val);
@@ -104,44 +115,40 @@ const create_conditions = (
 				'=': equal,
 			} = val;
 			if (like !== undefined) {
-				prepStatementValues.push(like);
-				return `${column} LIKE ?`;
+				return `${column} LIKE ${colOrVal(like)}`;
 			}
 			if (notlike !== undefined) {
-				prepStatementValues.push(notlike);
-				return `${column} NOT LIKE ?`;
+				return `${column} NOT LIKE ${colOrVal(notlike)}`;
 			}
 			if (rlike !== undefined) {
-				prepStatementValues.push(rlike);
-				return `${column} RLIKE ?`;
+				return `${column} RLIKE ${colOrVal(rlike)}`;
 			}
 			if (notrlike !== undefined) {
-				prepStatementValues.push(notrlike);
-				return `${column} NOT RLIKE ?`;
+				return `${column} NOT RLIKE ${colOrVal(notrlike)}`;
 			}
 			if (regexp !== undefined) {
-				prepStatementValues.push(regexp);
-				return `${column} REGEXP ?`;
+				return `${column} REGEXP ${colOrVal(regexp)}`;
 			}
 			if (notregexp !== undefined) {
-				prepStatementValues.push(notregexp);
-				return `${column} NOT REGEXP ?`;
+				return `${column} NOT REGEXP ${colOrVal(notregexp)}`;
 			}
 			if (
 				between !== undefined &&
 				Array.isArray(between) &&
 				between.length === 2
 			) {
-				prepStatementValues.push(between[0], between[0]);
-				return `(${column} BETWEEN ? AND ?)`;
+				return `(${column} BETWEEN ${colOrVal(
+					between[0]
+				)} AND ${colOrVal(between[1])})`;
 			}
 			if (
 				notbetween !== undefined &&
 				Array.isArray(notbetween) &&
 				notbetween.length === 2
 			) {
-				prepStatementValues.push(notbetween[0], notbetween[0]);
-				return `(${column} NOT BETWEEN ? AND ?)`;
+				return `(${column} NOT BETWEEN ${colOrVal(
+					notbetween[0]
+				)} AND ${colOrVal(notbetween[1])})`;
 			}
 			if (
 				inOperator !== undefined &&
@@ -173,41 +180,33 @@ const create_conditions = (
 			}
 
 			if (greaterThan !== undefined) {
-				prepStatementValues.push(greaterThan);
-				return `${column} > ?`;
+				return `${column} > ${colOrVal(greaterThan)}`;
 			}
 
 			if (smallerThan !== undefined) {
-				prepStatementValues.push(smallerThan);
-				return `${column} < ?`;
+				return `${column} < ${colOrVal(smallerThan)}`;
 			}
 			if (different !== undefined) {
-				prepStatementValues.push(different);
-				return `${column} <> ?`;
+				return `${column} <> ${colOrVal(different)}`;
 			}
 			if (notEqual !== undefined) {
-				prepStatementValues.push(notEqual);
-				return `${column} != ?`;
+				return `${column} != ${colOrVal(notEqual)}`;
 			}
 			if (greatherOrEqual !== undefined) {
-				prepStatementValues.push(greatherOrEqual);
-				return `${column} >= ?`;
+				return `${column} >= ${colOrVal(greatherOrEqual)}`;
 			}
 			if (smallerOrEqual !== undefined) {
-				prepStatementValues.push(smallerOrEqual);
-				return `${column} <= ?`;
+				return `${column} <= ${colOrVal(smallerOrEqual)}`;
 			}
 			if (equal !== undefined) {
-				prepStatementValues.push(equal);
-				return `${column} = ?`;
+				return `${column} = ${colOrVal(equal)}`;
 			}
 			return;
 		}
 		if (val === null || val === true || val === false) {
 			return `${column} IS ${escVal(val)}`;
 		}
-		prepStatementValues.push(val);
-		return `${column} = ?`;
+		return `${column} = ${colOrVal(val)}`;
 	};
 
 	if ('__or' in value) {

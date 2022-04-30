@@ -1,4 +1,9 @@
 import {
+	isSqlExpressionPreparedStatement,
+	PreparedStatement,
+	SqlValues,
+} from '../../types';
+import {
 	escapeNames,
 	putBackticks,
 	putBrackets,
@@ -9,53 +14,74 @@ import { isColumnAliasObject, SelectColumns } from './types';
 const create_columns = (
 	columns?: SelectColumns,
 	alias?: string
-): string | undefined => {
+): PreparedStatement => {
 	if (typeof columns === 'string') {
 		if (columns === '*') {
-			return columns;
+			return { statement: '*', values: [] };
 		}
 		if (columns.endsWith('.*')) {
-			return `${escapeNames(columns.substring(0, columns.length - 2))}.*`;
+			return {
+				statement: `${escapeNames(
+					columns.substring(0, columns.length - 2)
+				)}.*`,
+				values: [],
+			};
 		}
-		return safeApplyAlias(escapeNames(columns), alias);
+		return {
+			statement: safeApplyAlias(escapeNames(columns), alias),
+			values: [],
+		};
 	}
 	if (Array.isArray(columns)) {
 		return columns
 			.map((c) => create_columns(c, alias))
 			.filter((v) => !!v)
-			.join(',');
+			.reduce(
+				(acc, cur) => {
+					acc.statement += `,${cur.statement}`;
+					acc.values.push(...cur.values);
+					return acc;
+				},
+				{ statement: '', values: [] }
+			);
 	}
 	if (
 		typeof columns === 'object' &&
 		columns !== null &&
 		columns !== undefined
 	) {
-		return Object.entries(columns)
-			.filter(([_, val]) => val !== undefined)
-			.map(([key, val]) => {
-				if (key === '__expression' && isColumnAliasObject(val)) {
-					return Object.entries(val)
-						.map(
-							([expressionAlias, expression]) =>
-								`${putBrackets(expression)} AS ${putBackticks(
-									expressionAlias
-								)}`
-						)
-						.join(',');
-				}
-				if (typeof val !== 'string') {
-					throw `Incorrect columns object. Type error: expected string received "${typeof val}" value: ${val}`;
-				}
-				const columnAlias = putBackticks(key);
-				const columnRef = safeApplyAlias(
-					escapeNames(val as string),
-					alias
-				);
-				if (val === key) return columnRef;
-				return `${columnRef} AS ${columnAlias}`;
-			})
-			.join(',');
+		const values: SqlValues[] = [];
+		return {
+			statement: Object.entries(columns)
+				.filter(([_, val]) => val !== undefined)
+				.map(([key, val]) => {
+					const columnAlias = putBackticks(key);
+					if (isSqlExpressionPreparedStatement(val)) {
+						values.push(...val.values);
+						val.statement = val.statement
+							.split('__SQL__EXPRESSION__ALIAS__')
+							.join(alias);
+						return `${val.statement} AS ${columnAlias}`;
+					}
+					if (typeof val !== 'string') {
+						throw `Incorrect columns object. Type error: expected string received "${typeof val}" value: ${val}`;
+					}
+
+					const columnRef = safeApplyAlias(
+						escapeNames(val as string),
+						alias
+					);
+					if (val === key) return columnRef;
+					return `${columnRef} AS ${columnAlias}`;
+				})
+				.join(','),
+			values,
+		};
 	}
+	return {
+		statement: typeof alias === 'string' ? `${alias}.*` : '*',
+		values: [],
+	};
 };
 
 export default create_columns;

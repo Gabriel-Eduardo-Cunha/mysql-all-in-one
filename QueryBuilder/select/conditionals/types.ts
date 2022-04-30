@@ -1,8 +1,9 @@
-import { SqlValues } from '../../types';
+import { SqlValues, SqlColumn } from '../../types';
 
 export type ConditionOptions =
 	| ConditionOptionsArray
 	| ConditionObject
+	| Record<string, any>
 	| undefined;
 
 type ConditionOptionsArray = ['__or' | ConditionOptions, ...ConditionOptions[]];
@@ -15,6 +16,7 @@ interface ConditionObject {
 		| Array<SqlValues>
 		| OperatorOptionsObject
 		| ColumnRelationObject
+		| SqlColumn
 		| undefined;
 	[y: number]: never;
 }
@@ -36,26 +38,26 @@ export const isColumnRelationObject = (
 	);
 
 export interface OperatorOptionsObject {
-	like?: string;
-	notlike?: string;
-	rlike?: string;
-	notrlike?: string;
-	regexp?: string;
-	notregexp?: string;
-	between?: Array<string | number | Date>;
-	notbetween?: Array<string | number | Date>;
+	like?: string | SqlColumn;
+	notlike?: string | SqlColumn;
+	rlike?: string | SqlColumn;
+	notrlike?: string | SqlColumn;
+	regexp?: string | SqlColumn;
+	notregexp?: string | SqlColumn;
+	between?: Array<string | number | Date | SqlColumn>;
+	notbetween?: Array<string | number | Date | SqlColumn>;
 	in?: Array<string | number | Date>;
 	is?: SqlValues;
 	isnot?: SqlValues;
 	notin?: Array<string | number | Date>;
 	'<=>'?: SqlValues;
-	'>'?: string | number | Date;
-	'<'?: string | number | Date;
-	'>='?: string | number | Date;
-	'<='?: string | number | Date;
-	'<>'?: string | number | Date;
-	'!='?: string | number | Date;
-	'='?: string | number | Date;
+	'>'?: string | number | Date | SqlColumn;
+	'<'?: string | number | Date | SqlColumn;
+	'>='?: string | number | Date | SqlColumn;
+	'<='?: string | number | Date | SqlColumn;
+	'<>'?: string | number | Date | SqlColumn;
+	'!='?: string | number | Date | SqlColumn;
+	'='?: string | number | Date | SqlColumn;
 }
 const OperatorOptionsObjectKeys: Array<String> = [
 	'like',

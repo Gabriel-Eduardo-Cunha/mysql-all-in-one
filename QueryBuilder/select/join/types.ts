@@ -34,5 +34,5 @@ export type SelectJoin = JoinObject | Array<JoinObject> | undefined;
 
 export interface JoinReturnObject {
 	joinPreparedStatement: PreparedStatement;
-	columnsPreparedStatement: string;
+	columnsPreparedStatement: PreparedStatement;
 }

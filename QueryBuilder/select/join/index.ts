@@ -10,10 +10,11 @@ const join = (join: SelectJoin, alias?: string): JoinReturnObject => {
 	const sJoins: Array<string> = [];
 	const joinColumns: Array<string | undefined> = [];
 	const joinPrepStamentValues: Array<SqlValues> = [];
+	const jColumnsValues: SqlValues[] = [];
 	if (join === undefined)
 		return {
 			joinPreparedStatement: { ...emptyPrepStatement },
-			columnsPreparedStatement: '',
+			columnsPreparedStatement: { ...emptyPrepStatement },
 		};
 	if (!Array.isArray(join)) join = [join];
 	join.filter((j) => isJoinObject(j)).forEach((j) => {
@@ -26,7 +27,9 @@ const join = (join: SelectJoin, alias?: string): JoinReturnObject => {
 		} = tableObject(table);
 		joinPrepStamentValues.push(...tableValues);
 		if (columns !== undefined) {
-			joinColumns.push(create_columns(columns, joinAlias));
+			const joinColumnsPrepStatement = create_columns(columns, joinAlias);
+			jColumnsValues.push(...joinColumnsPrepStatement.values);
+			joinColumns.push(joinColumnsPrepStatement.statement);
 		}
 		let onStatement = '';
 		if (on !== undefined) {
@@ -54,7 +57,10 @@ const join = (join: SelectJoin, alias?: string): JoinReturnObject => {
 
 	return {
 		joinPreparedStatement: joinPrepStatement,
-		columnsPreparedStatement: jColumns,
+		columnsPreparedStatement: {
+			statement: jColumns,
+			values: jColumnsValues,
+		},
 	};
 };
 
