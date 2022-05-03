@@ -33,17 +33,19 @@ const create_columns = (
 		};
 	}
 	if (Array.isArray(columns)) {
-		return columns
+		const prepStatemnt = columns
 			.map((c) => create_columns(c, alias))
 			.filter((v) => !!v)
 			.reduce(
 				(acc, cur) => {
-					acc.statement += `,${cur.statement}`;
+					acc.statement.push(cur.statement);
 					acc.values.push(...cur.values);
 					return acc;
 				},
-				{ statement: '', values: [] }
+				{ statement: [] as any, values: [] as SqlValues[] }
 			);
+		prepStatemnt.statement = prepStatemnt.statement.join(',');
+		return prepStatemnt;
 	}
 	if (
 		typeof columns === 'object' &&
