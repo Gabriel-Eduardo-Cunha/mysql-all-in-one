@@ -41,10 +41,9 @@ const deleteFrom = (
 	const prepStatement: PreparedStatement = {
 		statement: `DELETE ${quick === true ? 'QUICK ' : ''}${
 			ignore === true ? 'IGNORE ' : ''
-		}FROM ${tableRef}${whereStatement}${whereStatement}${order(
-			orderOpts,
-			alias
-		)}${limit ? ` LIMIT ${limit}` : ''};`,
+		}FROM ${tableRef}${whereStatement}${order(orderOpts, alias)}${
+			limit ? ` LIMIT ${limit}` : ''
+		};`,
 		values: whereValues,
 	};
 	return returnPreparedStatement === true
