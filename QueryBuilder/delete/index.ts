@@ -1,5 +1,6 @@
 import { ConditionOptions } from '../select/conditionals/types';
 import where from '../select/conditionals/where';
+import { order } from '../select/order';
 import {
 	generateQueryFromPreparedStatement,
 	PreparedStatement,
@@ -21,7 +22,13 @@ const deleteFrom = (
 	whereOpts?: ConditionOptions,
 	opts?: DeleteOptions
 ): string | PreparedStatement => {
-	const { ignore, quick, returnPreparedStatement } = {
+	const {
+		ignore,
+		quick,
+		returnPreparedStatement,
+		limit,
+		order: orderOpts,
+	} = {
 		...defaultDeleteOptions,
 		...opts,
 	};
@@ -34,7 +41,10 @@ const deleteFrom = (
 	const prepStatement: PreparedStatement = {
 		statement: `DELETE ${quick === true ? 'QUICK ' : ''}${
 			ignore === true ? 'IGNORE ' : ''
-		}FROM ${tableRef}${whereStatement};`,
+		}FROM ${tableRef}${whereStatement}${whereStatement}${order(
+			orderOpts,
+			alias
+		)}${limit ? ` LIMIT ${limit}` : ''};`,
 		values: whereValues,
 	};
 	return returnPreparedStatement === true

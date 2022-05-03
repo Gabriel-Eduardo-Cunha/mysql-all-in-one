@@ -1,3 +1,5 @@
+import { SelectOrder } from '../select/order/type';
+
 export const defaultDeleteOptions: DeleteOptions = {
 	ignore: false,
 	quick: false,
@@ -14,6 +16,15 @@ export interface DeleteOptions {
 	 * @default false
 	 */
 	quick?: boolean;
+	/**
+	 * @description Adds LIMIT modifier corresponding to the number.
+	 * @default null
+	 */
+	limit?: number;
+	/**
+	 * @description Adds ORDER BY modifier if true
+	 */
+	order?: SelectOrder;
 	/**
 	 * @description Returns a PreparedStament object if true
 	 * @default false
