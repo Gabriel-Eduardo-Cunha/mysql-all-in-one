@@ -1,6 +1,6 @@
 import mysql from 'mysql2';
 import { ConditionOptions } from './select/conditionals/types';
-import { SqlColumn, SqlValues } from './types';
+import { SqlColumn, SqlExpressionPreparedStatement, SqlValues } from './types';
 
 /**
  * Escapes a value into a valid mysql String representation
@@ -104,3 +104,13 @@ export const isNotEmptyString = (val: any): val is string =>
  * >> WHERE `date` = `another_table`.`date`
  */
 export const sqlCol = (column: string): SqlColumn => new SqlColumn(column);
+
+export const placeAliasInSqlExpression = (
+	sqlExpression: SqlExpressionPreparedStatement,
+	alias: string | null | undefined
+) => {
+	sqlExpression.statement = sqlExpression.statement
+		.split('__SQL__EXPRESSION__ALIAS__.')
+		.join(typeof alias === 'string' ? `${alias}.` : '');
+	return sqlExpression;
+};

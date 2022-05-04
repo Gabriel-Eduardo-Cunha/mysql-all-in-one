@@ -1,9 +1,12 @@
 import {
+	emptyPrepStatement,
 	generateQueryFromPreparedStatement,
 	isArrayOfStrings,
+	isSqlExpressionPreparedStatement,
 	PreparedStatement,
+	SqlValues,
 } from '../types';
-import { putBackticks } from '../utils';
+import { placeAliasInSqlExpression, putBackticks, putBrackets } from '../utils';
 import {
 	InsertOptions,
 	InsertRows,
@@ -12,8 +15,30 @@ import {
 	InsertRow,
 } from './types';
 
-const buildRow = (keys: Array<string>): string => {
-	return `(${keys.map((_) => '?').join(',')})`;
+const buildRow = (
+	keys: Array<string>,
+	insertRow: InsertRow
+): PreparedStatement => {
+	const sqlValues: SqlValues[] = [];
+	const insertValues = keys.reduce((acc, cur): InsertRow => {
+		acc[cur] = insertRow[cur];
+		return acc;
+	}, {} as InsertRow);
+
+	return {
+		statement: `(${Object.values(insertValues)
+			.map((v) => {
+				if (isSqlExpressionPreparedStatement(v)) {
+					v = placeAliasInSqlExpression(v, null);
+					sqlValues.push(...v.values);
+					return putBrackets(v.statement);
+				}
+				sqlValues.push(v as SqlValues);
+				return '?';
+			})
+			.join(',')})`,
+		values: sqlValues,
+	};
 };
 
 const buildInsertRows = (
@@ -27,14 +52,21 @@ const buildInsertRows = (
 			? Object.keys(rows[0])
 			: Object.keys(rows);
 
-		return {
-			statement: Array.isArray(rows)
-				? rows.map((_) => buildRow(keys)).join(',')
-				: buildRow(keys),
-			values: Array.isArray(rows)
-				? rows.map((row) => keys.map((key) => row[key])).flat()
-				: keys.map((key) => rows[key]),
-		};
+		const prepStatement = Array.isArray(rows)
+			? rows
+					.map((insertRow) => buildRow(keys, insertRow))
+					.reduce(
+						(acc, cur) => {
+							acc.statement.push(cur.statement);
+							acc.values.push(...cur.values);
+							return acc;
+						},
+						{ statement: [] as any, values: [] as SqlValues[] }
+					)
+			: buildRow(keys, rows);
+		if (Array.isArray(prepStatement.statement))
+			prepStatement.statement = prepStatement.statement.join(',');
+		return prepStatement;
 	}
 	throw `Invalid rows format for insert object, insert rows must be one or many objects with valid SQL values String | Date | null | boolean | number (undefined is also accepted, but ignored); Insert row object received: ${rows}`;
 };

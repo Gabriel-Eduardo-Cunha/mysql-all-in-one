@@ -5,6 +5,7 @@ import {
 } from '../../types';
 import {
 	escapeNames,
+	placeAliasInSqlExpression,
 	putBackticks,
 	putBrackets,
 	safeApplyAlias,
@@ -60,9 +61,7 @@ const create_columns = (
 					const columnAlias = putBackticks(key);
 					if (isSqlExpressionPreparedStatement(val)) {
 						values.push(...val.values);
-						val.statement = val.statement
-							.split('__SQL__EXPRESSION__ALIAS__')
-							.join(alias);
+						val = placeAliasInSqlExpression(val, alias);
 						return `${val.statement} AS ${columnAlias}`;
 					}
 					if (typeof val !== 'string') {

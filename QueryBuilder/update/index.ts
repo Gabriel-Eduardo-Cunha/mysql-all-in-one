@@ -3,10 +3,17 @@ import where from '../select/conditionals/where';
 import { order } from '../select/order';
 import {
 	generateQueryFromPreparedStatement,
+	isSqlExpressionPreparedStatement,
 	PreparedStatement,
 	SqlValues,
 } from '../types';
-import { escapeNames, extractTableAlias, putBackticks } from '../utils';
+import {
+	escapeNames,
+	extractTableAlias,
+	placeAliasInSqlExpression,
+	putBackticks,
+	putBrackets,
+} from '../utils';
 import {
 	defaultUpdateOptions,
 	isUpdateValues,
@@ -50,7 +57,12 @@ const update = (
 	}${tableRef} SET ${Object.entries(values)
 		.filter(([_, val]) => val !== undefined)
 		.map(([key, val]) => {
-			prepStatementValues.push(val);
+			if (isSqlExpressionPreparedStatement(val)) {
+				val = placeAliasInSqlExpression(val, null);
+				prepStatementValues.push(...val.values);
+				return `${putBackticks(key)} = ${putBrackets(val.statement)}`;
+			}
+			prepStatementValues.push(val as SqlValues);
 			return `${putBackticks(key)} = ?`;
 		})
 		.join(',')}${whereStatement}${order(orderOpts, alias)}${

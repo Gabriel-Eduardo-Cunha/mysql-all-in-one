@@ -56,7 +56,7 @@ export class SqlColumn {
 	constructor(public column: string) {}
 }
 
-interface SqlExpressionPreparedStatement {
+export interface SqlExpressionPreparedStatement {
 	statement: string;
 	values: Array<SqlValues>;
 	__is_prep_statement: boolean;

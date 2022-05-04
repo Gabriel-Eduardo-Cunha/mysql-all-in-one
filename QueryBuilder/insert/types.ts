@@ -1,4 +1,8 @@
-import { isSqlValues, SqlValues } from '../types';
+import {
+	isSqlExpressionPreparedStatement,
+	isSqlValues,
+	SqlValues,
+} from '../types';
 
 export const defaultInsertOptions: InsertOptions = {
 	ignore: false,
@@ -35,7 +39,12 @@ export const isInsertRow = (val: any): val is InsertRow =>
 	typeof val === 'object' &&
 	!Array.isArray(val) &&
 	Object.values(val).length !== 0 &&
-	Object.values(val).every((v) => v === undefined || isSqlValues(v));
+	Object.values(val).every(
+		(v) =>
+			v === undefined ||
+			isSqlValues(v) ||
+			isSqlExpressionPreparedStatement(v)
+	);
 
 export const isInsertRows = (val: any): val is InsertRows =>
 	val !== undefined &&
@@ -45,5 +54,5 @@ export const isInsertRows = (val: any): val is InsertRows =>
 		(Array.isArray(val) && val.every((v) => isInsertRow(v))));
 
 export interface InsertRow {
-	[key: string]: SqlValues | undefined;
+	[key: string]: SqlValues | undefined | Record<string, any>;
 }

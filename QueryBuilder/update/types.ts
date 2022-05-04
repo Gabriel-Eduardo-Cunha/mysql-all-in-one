@@ -1,15 +1,24 @@
 import { SelectOrder } from '../select/order/type';
-import { isSqlValues, SqlValues } from '../types';
+import {
+	isSqlExpressionPreparedStatement,
+	isSqlValues,
+	SqlValues,
+} from '../types';
 
 export const isUpdateValues = (val: any): val is UpdateValues =>
 	val !== undefined &&
 	val !== null &&
 	!Array.isArray(val) &&
 	typeof val === 'object' &&
-	Object.values(val).every((v) => isSqlValues(v) || v === undefined);
+	Object.values(val).every(
+		(v) =>
+			isSqlValues(v) ||
+			v === undefined ||
+			isSqlExpressionPreparedStatement(v)
+	);
 
 export interface UpdateValues {
-	[key: string]: SqlValues;
+	[key: string]: SqlValues | undefined | Record<string, any>;
 }
 
 export const defaultUpdateOptions: UpdateOptions = {
