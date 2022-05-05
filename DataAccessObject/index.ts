@@ -135,8 +135,14 @@ export class DataAccessObject {
 	 * @example emptyDatabase('mydatabase');
 	 */
 	public async emptyDatabase(database: string) {
-		await this.query(`DROP DATABASE IF EXISTS ${putBackticks(database)};`);
-		await this.query(`CREATE DATABASE ${putBackticks(database)};`);
+		try {
+			await this.query(
+				`DROP DATABASE IF EXISTS ${putBackticks(database)};`
+			);
+			await this.query(`CREATE DATABASE ${putBackticks(database)};`);
+		} catch (error) {
+			throw error;
+		}
 	}
 
 	/**
@@ -146,8 +152,12 @@ export class DataAccessObject {
 	 * @example loadDump('mydatabase', './folder/mydatabase.sql');
 	 */
 	public async loadDump(database: string, dumpFilePath: string) {
-		await this.emptyDatabase(database);
-		await this.loadSqlFile(database, dumpFilePath);
+		try {
+			await this.emptyDatabase(database);
+			await this.loadSqlFile(database, dumpFilePath);
+		} catch (error) {
+			throw error;
+		}
 	}
 
 	/**
@@ -157,29 +167,33 @@ export class DataAccessObject {
 	 * @example loadSqlFile('mydatabase', './folder/mysqlstatements.sql');
 	 */
 	public async loadSqlFile(database: string, sqlFilePath: string) {
-		const sql = fs.readFileSync(sqlFilePath, 'utf8');
+		try {
+			const sql = fs.readFileSync(sqlFilePath, 'utf8');
 
-		const sqlStatements = splitQuery(
-			sql,
-			mysqlSplitterOptions
-		) as Array<string>;
-		const maxAllowedPacket = parseInt(
-			await this.getServerVariable('max_allowed_packet')
-		);
+			const sqlStatements = splitQuery(
+				sql,
+				mysqlSplitterOptions
+			) as Array<string>;
+			const maxAllowedPacket = parseInt(
+				await this.getServerVariable('max_allowed_packet')
+			);
 
-		if (maxAllowedPacket && typeof maxAllowedPacket === 'number') {
-			const statementGroups = statementsMerge(
-				sqlStatements,
-				maxAllowedPacket / 2
-			);
-			await this.getPoolConnection(
-				async (conn) => {
-					for (const statementGroup of statementGroups) {
-						await this.connQuery(conn, statementGroup);
-					}
-				},
-				{ database, multipleStatements: true }
-			);
+			if (maxAllowedPacket && typeof maxAllowedPacket === 'number') {
+				const statementGroups = statementsMerge(
+					sqlStatements,
+					maxAllowedPacket / 2
+				);
+				await this.getPoolConnection(
+					async (conn) => {
+						for (const statementGroup of statementGroups) {
+							await this.connQuery(conn, statementGroup);
+						}
+					},
+					{ database, multipleStatements: true }
+				);
+			}
+		} catch (error) {
+			throw error;
 		}
 	}
 
@@ -199,73 +213,91 @@ export class DataAccessObject {
 		selectOpts: SelectOptions,
 		opts?: DataSelectOptions & DatabaseSelected
 	) {
-		const { returnMode, specificColumn, specificRow, groupData, database } =
-			{
+		try {
+			const {
+				returnMode,
+				specificColumn,
+				specificRow,
+				groupData,
+				database,
+			} = {
 				...defaultDataSelectOptions,
 				...opts,
 			};
-		const prepStatement: PreparedStatement = QuerySelect({
-			...selectOpts,
-			returnPreparedStatement: true,
-		}) as PreparedStatement;
-		let resultSet = (await this.executionMethod(
-			prepStatement,
-			database
-		)) as DataPacket;
-		if (!Array.isArray(resultSet)) return resultSet;
-		if (isGroupDataOptions(groupData)) {
-			resultSet = group(resultSet, groupData.by, groupData.columnGroups);
-		}
-		if (!isDataPacket(resultSet)) return null;
-		switch (returnMode) {
-			case 'normal':
-				return isDataPacket(resultSet) ? resultSet : null;
-			case 'firstRow':
-				return isRowDataPacket(resultSet?.[0]) ? resultSet[0] : null;
-			case 'firstColumn':
-				const columnValues = resultSet.map((row) =>
-					typeof row === 'object'
-						? Object.values(row)?.[0]
-						: undefined
+			const prepStatement: PreparedStatement = QuerySelect({
+				...selectOpts,
+				returnPreparedStatement: true,
+			}) as PreparedStatement;
+			let resultSet = (await this.executionMethod(
+				prepStatement,
+				database
+			)) as DataPacket;
+			if (!Array.isArray(resultSet)) return resultSet;
+			if (isGroupDataOptions(groupData)) {
+				resultSet = group(
+					resultSet,
+					groupData.by,
+					groupData.columnGroups
 				);
-				return isColumnValues(columnValues) ? columnValues : null;
-			case 'firstValue':
-				const firstRow = resultSet[0];
-				if (!isRowDataPacket(firstRow)) return null;
-				const firstRowValues = Object.values(firstRow);
-				return firstRowValues.length !== 0 &&
-					isSqlValues(firstRowValues[0])
-					? firstRowValues[0]
-					: null;
-			case 'specific':
-				if (specificRow === undefined && specificColumn === undefined)
-					return resultSet;
-				if (
-					specificRow !== undefined &&
-					typeof specificRow === 'number' &&
-					resultSet.length > specificRow &&
-					isRowDataPacket(resultSet[specificRow])
-				) {
-					return resultSet[specificRow];
-				}
-				if (
-					specificColumn !== undefined &&
-					typeof specificColumn === 'string' &&
-					resultSet.length !== 0 &&
-					resultSet.every(
-						(row) =>
-							isRowDataPacket(row) &&
-							row[specificColumn] !== undefined &&
-							isSqlValues(row[specificColumn])
-					)
-				) {
-					const columnValues = resultSet.map(
-						(row) => row[specificColumn]
+			}
+			if (!isDataPacket(resultSet)) return null;
+			switch (returnMode) {
+				case 'normal':
+					return isDataPacket(resultSet) ? resultSet : null;
+				case 'firstRow':
+					return isRowDataPacket(resultSet?.[0])
+						? resultSet[0]
+						: null;
+				case 'firstColumn':
+					const columnValues = resultSet.map((row) =>
+						typeof row === 'object'
+							? Object.values(row)?.[0]
+							: undefined
 					);
-					if (isColumnValues(columnValues)) return columnValues;
-				}
+					return isColumnValues(columnValues) ? columnValues : null;
+				case 'firstValue':
+					const firstRow = resultSet[0];
+					if (!isRowDataPacket(firstRow)) return null;
+					const firstRowValues = Object.values(firstRow);
+					return firstRowValues.length !== 0 &&
+						isSqlValues(firstRowValues[0])
+						? firstRowValues[0]
+						: null;
+				case 'specific':
+					if (
+						specificRow === undefined &&
+						specificColumn === undefined
+					)
+						return resultSet;
+					if (
+						specificRow !== undefined &&
+						typeof specificRow === 'number' &&
+						resultSet.length > specificRow &&
+						isRowDataPacket(resultSet[specificRow])
+					) {
+						return resultSet[specificRow];
+					}
+					if (
+						specificColumn !== undefined &&
+						typeof specificColumn === 'string' &&
+						resultSet.length !== 0 &&
+						resultSet.every(
+							(row) =>
+								isRowDataPacket(row) &&
+								row[specificColumn] !== undefined &&
+								isSqlValues(row[specificColumn])
+						)
+					) {
+						const columnValues = resultSet.map(
+							(row) => row[specificColumn]
+						);
+						if (isColumnValues(columnValues)) return columnValues;
+					}
+			}
+			return null;
+		} catch (error) {
+			throw error;
 		}
-		return null;
 	}
 
 	/**
@@ -281,17 +313,21 @@ export class DataAccessObject {
 		whereOpts?: ConditionOptions,
 		opts?: DeleteOptions & DatabaseSelected
 	) {
-		const { database } = { ...opts };
-		delete opts?.database;
-		const preparedStatement = QueryDelete(table, whereOpts, {
-			...opts,
-			returnPreparedStatement: true,
-		}) as PreparedStatement;
-		const result = (await this.executionMethod(
-			preparedStatement,
-			database
-		)) as OkPacket;
-		return result.affectedRows;
+		try {
+			const { database } = { ...opts };
+			delete opts?.database;
+			const preparedStatement = QueryDelete(table, whereOpts, {
+				...opts,
+				returnPreparedStatement: true,
+			}) as PreparedStatement;
+			const result = (await this.executionMethod(
+				preparedStatement,
+				database
+			)) as OkPacket;
+			return result.affectedRows;
+		} catch (error) {
+			throw error;
+		}
 	}
 
 	/**
@@ -309,17 +345,21 @@ export class DataAccessObject {
 		whereOpts?: ConditionOptions,
 		opts?: UpdateOptions & DatabaseSelected
 	) {
-		const { database } = { ...opts };
-		delete opts?.database;
-		const preparedStatement = QueryUpdate(table, values, whereOpts, {
-			...opts,
-			returnPreparedStatement: true,
-		}) as PreparedStatement;
-		const result = (await this.executionMethod(
-			preparedStatement,
-			database
-		)) as OkPacket;
-		return result.affectedRows;
+		try {
+			const { database } = { ...opts };
+			delete opts?.database;
+			const preparedStatement = QueryUpdate(table, values, whereOpts, {
+				...opts,
+				returnPreparedStatement: true,
+			}) as PreparedStatement;
+			const result = (await this.executionMethod(
+				preparedStatement,
+				database
+			)) as OkPacket;
+			return result.affectedRows;
+		} catch (error) {
+			throw error;
+		}
 	}
 
 	/**
@@ -335,53 +375,57 @@ export class DataAccessObject {
 		rows: InsertRows,
 		opts?: InsertOptionsDAO & InsertOptions & DatabaseSelected
 	) {
-		opts = { ...opts, returnPreparedStatement: true };
-		const { rowsPerStatement, database } = {
-			...opts,
-		};
-		delete opts?.rowsPerStatement;
-		delete opts?.database;
-		if (isInsertRows(rows)) {
-			if (!Array.isArray(rows)) rows = [rows];
-			if (
-				rowsPerStatement !== undefined &&
-				rowsPerStatement !== null &&
-				typeof rowsPerStatement === 'number' &&
-				rowsPerStatement > 0
-			) {
-				const rowsGroups = arrayUnflat(rows, rowsPerStatement);
-				for (const rowsGroup of rowsGroups) {
+		try {
+			opts = { ...opts, returnPreparedStatement: true };
+			const { rowsPerStatement, database } = {
+				...opts,
+			};
+			delete opts?.rowsPerStatement;
+			delete opts?.database;
+			if (isInsertRows(rows)) {
+				if (!Array.isArray(rows)) rows = [rows];
+				if (
+					rowsPerStatement !== undefined &&
+					rowsPerStatement !== null &&
+					typeof rowsPerStatement === 'number' &&
+					rowsPerStatement > 0
+				) {
+					const rowsGroups = arrayUnflat(rows, rowsPerStatement);
+					for (const rowsGroup of rowsGroups) {
+						const preparedStatement = QueryInsert(
+							table,
+							rowsGroup,
+							opts
+						) as PreparedStatement;
+
+						await this.executionMethod(preparedStatement, database);
+					}
+					return null;
+				}
+				const insertedIds = [];
+				for (const row of rows) {
 					const preparedStatement = QueryInsert(
 						table,
-						rowsGroup,
+						row,
 						opts
 					) as PreparedStatement;
 
-					await this.executionMethod(preparedStatement, database);
+					const result = (await this.executionMethod(
+						preparedStatement,
+						database
+					)) as OkPacket;
+					insertedIds.push(result.insertId);
 				}
-				return null;
+				return insertedIds.length === 0
+					? null
+					: insertedIds.length === 1
+					? insertedIds[0]
+					: insertedIds;
 			}
-			const insertedIds = [];
-			for (const row of rows) {
-				const preparedStatement = QueryInsert(
-					table,
-					row,
-					opts
-				) as PreparedStatement;
-
-				const result = (await this.executionMethod(
-					preparedStatement,
-					database
-				)) as OkPacket;
-				insertedIds.push(result.insertId);
-			}
-			return insertedIds.length === 0
-				? null
-				: insertedIds.length === 1
-				? insertedIds[0]
-				: insertedIds;
+			return null;
+		} catch (error) {
+			throw error;
 		}
-		return null;
 	}
 
 	/**
@@ -396,40 +440,46 @@ export class DataAccessObject {
 		rows: UpsertRow,
 		opts?: UpsertOptions & DatabaseSelected
 	) {
-		opts = { ...defaultUpsertOptions, ...opts };
-		const { primaryKey, database } = opts;
-		if (!isInsertRows(rows) || typeof primaryKey !== 'string') return null;
-		if (!Array.isArray(rows)) rows = [rows];
-		const affectedIds: Array<number> = [];
-		for (const row of rows) {
-			if (row[primaryKey] !== undefined) {
-				const where: ConditionOptions = {};
-				where[primaryKey] = row[primaryKey];
-				await this.update(table, row, where, { database });
-				const primaryKeyValue = row[primaryKey];
-				if (
-					primaryKeyValue !== null &&
-					primaryKeyValue !== undefined &&
-					(typeof primaryKeyValue === 'number' ||
-						(typeof primaryKeyValue === 'string' &&
-							!isNaN(+primaryKeyValue)))
-				) {
-					if (typeof primaryKeyValue === 'string') {
-						affectedIds.push(parseInt(primaryKeyValue));
-						continue;
+		try {
+			opts = { ...defaultUpsertOptions, ...opts };
+			const { primaryKey, database } = opts;
+			if (!isInsertRows(rows) || typeof primaryKey !== 'string')
+				return null;
+			if (!Array.isArray(rows)) rows = [rows];
+			const affectedIds: Array<number> = [];
+			for (const row of rows) {
+				if (row[primaryKey] !== undefined) {
+					const where: ConditionOptions = {};
+					where[primaryKey] = row[primaryKey];
+					await this.update(table, row, where, { database });
+					const primaryKeyValue = row[primaryKey];
+					if (
+						primaryKeyValue !== null &&
+						primaryKeyValue !== undefined &&
+						(typeof primaryKeyValue === 'number' ||
+							(typeof primaryKeyValue === 'string' &&
+								!isNaN(+primaryKeyValue)))
+					) {
+						if (typeof primaryKeyValue === 'string') {
+							affectedIds.push(parseInt(primaryKeyValue));
+							continue;
+						}
+						affectedIds.push(primaryKeyValue);
 					}
-					affectedIds.push(primaryKeyValue);
+					continue;
 				}
-				continue;
+				const insertedId = await this.insert(table, row, { database });
+				if (typeof insertedId === 'number')
+					affectedIds.push(insertedId);
 			}
-			const insertedId = await this.insert(table, row, { database });
-			if (typeof insertedId === 'number') affectedIds.push(insertedId);
+			return affectedIds.length === 0
+				? null
+				: affectedIds.length === 1
+				? affectedIds[0]
+				: affectedIds;
+		} catch (error) {
+			throw error;
 		}
-		return affectedIds.length === 0
-			? null
-			: affectedIds.length === 1
-			? affectedIds[0]
-			: affectedIds;
 	}
 
 	/**
@@ -442,7 +492,11 @@ export class DataAccessObject {
 	public async query(sql: string | PreparedStatement, database?: string) {
 		return await this.getPoolConnection(
 			async (conn) => {
-				return await this.connQuery(conn, sql);
+				try {
+					return await this.connQuery(conn, sql);
+				} catch (error) {
+					throw error;
+				}
 			},
 			{ database }
 		);
@@ -452,12 +506,20 @@ export class DataAccessObject {
 		preparedStatement: PreparedStatement,
 		database?: string
 	) {
-		return await this.getPoolConnection(
-			async (conn) => {
-				return await this.connExecute(conn, preparedStatement);
-			},
-			{ database }
-		);
+		try {
+			return await this.getPoolConnection(
+				async (conn) => {
+					try {
+						return await this.connExecute(conn, preparedStatement);
+					} catch (error) {
+						throw error;
+					}
+				},
+				{ database }
+			);
+		} catch (error) {
+			throw error;
+		}
 	}
 
 	private getPoolConnection(
@@ -478,27 +540,33 @@ export class DataAccessObject {
 					reject(err);
 					return;
 				}
-				const shouldChangeDatabase =
-					isNotEmptyString(database) &&
-					database !== this.connectionData.database;
+				try {
+					const shouldChangeDatabase =
+						isNotEmptyString(database) &&
+						database !== this.connectionData.database;
 
-				// Change to the desired database
-				if (shouldChangeDatabase) {
-					await this.connChangeUser(conn, {
-						database: database as string,
-					});
+					// Change to the desired database
+					if (shouldChangeDatabase) {
+						await this.connChangeUser(conn, {
+							database: database as string,
+						});
+					}
+
+					resolve(await callback(conn));
+
+					// Change back to the original connection database
+					if (
+						shouldChangeDatabase &&
+						isNotEmptyString(this.connectionData.database)
+					) {
+						await this.connChangeUser(conn, {
+							database: this.connectionData.database,
+						});
+					}
+					conn.release();
+				} catch (error) {
+					return reject(error);
 				}
-				resolve(await callback(conn));
-				// Change back to the original connection database
-				if (
-					shouldChangeDatabase &&
-					isNotEmptyString(this.connectionData.database)
-				) {
-					await this.connChangeUser(conn, {
-						database: this.connectionData.database,
-					});
-				}
-				conn.release();
 			});
 		});
 	}
@@ -543,10 +611,14 @@ export class DataAccessObject {
 	}
 
 	private async getServerVariable(variableName: string) {
-		const result = (await this.query(
-			escStr`SHOW VARIABLES LIKE ${variableName};`
-		)) as DataPacket;
-		return result[0]?.Value as string;
+		try {
+			const result = (await this.query(
+				escStr`SHOW VARIABLES LIKE ${variableName};`
+			)) as DataPacket;
+			return result[0]?.Value as string;
+		} catch (error) {
+			throw error;
+		}
 	}
 
 	private connChangeUser(
