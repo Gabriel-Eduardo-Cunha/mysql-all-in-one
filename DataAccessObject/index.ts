@@ -407,8 +407,19 @@ export class DataAccessObject {
 				where[primaryKey] = row[primaryKey];
 				await this.update(table, row, where, { database });
 				const primaryKeyValue = row[primaryKey];
-				if (typeof primaryKeyValue === 'number')
+				if (
+					primaryKeyValue !== null &&
+					primaryKeyValue !== undefined &&
+					(typeof primaryKeyValue === 'number' ||
+						(typeof primaryKeyValue === 'string' &&
+							!isNaN(+primaryKeyValue)))
+				) {
+					if (typeof primaryKeyValue === 'string') {
+						affectedIds.push(parseInt(primaryKeyValue));
+						continue;
+					}
 					affectedIds.push(primaryKeyValue);
+				}
 				continue;
 			}
 			const insertedId = await this.insert(table, row, { database });
