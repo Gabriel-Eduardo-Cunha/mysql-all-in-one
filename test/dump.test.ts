@@ -5,11 +5,14 @@ import * as QueryBuilder from '../QueryBuilder';
 const dao = new DataAccessObject({
 	host: 'localhost',
 	user: 'root',
-	port: 3306,
-	password: '1234',
+	port: 3307,
+	password: '',
+	database: 'ambisis',
 });
 
 const main = async () => {
-	dao.select({ from: 'my_table' });
+	const result = await dao.select({ from: 'cliente' });
+	console.log('finished');
+	await dao.dispose();
 };
 main();

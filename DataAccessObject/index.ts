@@ -130,6 +130,21 @@ export class DataAccessObject {
 	}
 
 	/**
+	 * @description Closes all connections. Node.js event loop will not be blocked by DAO anymore.
+	 */
+	public dispose() {
+		return new Promise<void>((res, rej) => {
+			this.multipleStatementsPool.end((err) => {
+				if (err) return rej(err);
+				this.pool.end((err) => {
+					if (err) return rej(err);
+					res();
+				});
+			});
+		});
+	}
+
+	/**
 	 * @description Will drop and recreate a database.
 	 * @param database Database to empty
 	 * @example emptyDatabase('mydatabase');
