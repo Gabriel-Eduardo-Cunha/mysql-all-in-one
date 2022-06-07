@@ -6,7 +6,8 @@ const query = QueryBuilder.insert(
 	{
 		id: 'test',
 		clienteId: sqlExpression`(SELECT * FROM myTable WHERE id = ${1})`,
+		name: undefined,
 	},
-	{ ignore: true }
+	{ returnPreparedStatement: true }
 );
 console.log(query);

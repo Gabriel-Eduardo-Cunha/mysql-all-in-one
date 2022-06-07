@@ -593,7 +593,9 @@ export class DataAccessObject {
 		return new Promise((resolve, reject) => {
 			conn.execute(
 				preparedStatement.statement,
-				preparedStatement.values,
+				preparedStatement.values?.map((e) =>
+					e === undefined ? null : e
+				),
 				(err, result) => {
 					if (err) return reject(err);
 					resolve(result);
