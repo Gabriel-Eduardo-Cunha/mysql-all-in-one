@@ -9,6 +9,7 @@ import {
 import {
 	escapeNames,
 	escVal,
+	putBrackets,
 	safeApplyAlias,
 	sqlExpression,
 } from '../../utils';
@@ -205,6 +206,13 @@ const create_conditions = (
 		}
 		if (val === null || val === true || val === false) {
 			return `${column} IS ${escVal(val)}`;
+		}
+		if (isSqlExpressionPreparedStatement(val)) {
+			val.statement = val.statement
+				.split('__SQL__EXPRESSION__ALIAS__')
+				.join(alias);
+			prepStatementValues.push(...val.values);
+			return `${column} = ${putBrackets(val.statement)}`;
 		}
 		return `${column} = ${colOrVal(val)}`;
 	};
