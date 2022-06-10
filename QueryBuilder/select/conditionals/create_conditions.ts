@@ -72,8 +72,12 @@ const create_conditions = (
 
 	if (isSqlExpressionPreparedStatement(value)) {
 		value.statement = value.statement
-			.split('__SQL__EXPRESSION__ALIAS__')
-			.join(alias);
+			.split('__SQL__EXPRESSION__ALIAS__.')
+			.join(
+				typeof alias === 'string' && alias.length !== 0
+					? `${alias}.`
+					: ''
+			);
 		return { values: value.values, statement: value.statement };
 	}
 
@@ -209,8 +213,12 @@ const create_conditions = (
 		}
 		if (isSqlExpressionPreparedStatement(val)) {
 			val.statement = val.statement
-				.split('__SQL__EXPRESSION__ALIAS__')
-				.join(alias);
+				.split('__SQL__EXPRESSION__ALIAS__.')
+				.join(
+					typeof alias === 'string' && alias.length !== 0
+						? `${alias}.`
+						: ''
+				);
 			prepStatementValues.push(...val.values);
 			return `${column} = ${putBrackets(val.statement)}`;
 		}

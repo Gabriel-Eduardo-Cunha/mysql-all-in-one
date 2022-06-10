@@ -111,6 +111,8 @@ export const placeAliasInSqlExpression = (
 ) => {
 	sqlExpression.statement = sqlExpression.statement
 		.split('__SQL__EXPRESSION__ALIAS__.')
-		.join(typeof alias === 'string' ? `${alias}.` : '');
+		.join(
+			typeof alias === 'string' && alias.length !== 0 ? `${alias}.` : ''
+		);
 	return sqlExpression;
 };

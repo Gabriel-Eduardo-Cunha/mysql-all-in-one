@@ -4,14 +4,18 @@ const obj: SelectOrder = {
 };
 
 interface OrderObject {
-	__expression?: String | Array<string>;
+	__expression?:
+		| String
+		| Array<string | Record<string, any>>
+		| Record<string, any>;
 	__no_alias?: SelectOrder;
 	[key: string]:
 		| 'asc'
 		| 'desc'
 		| String
-		| Array<string>
+		| Array<string | Record<string, any>>
 		| SelectOrder
+		| Record<string, any>
 		| undefined;
 }
 

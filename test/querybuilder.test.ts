@@ -1,5 +1,6 @@
 import { QueryBuilder } from '..';
 import { sqlExpression } from '../QueryBuilder';
+import { sqlCol } from '../QueryBuilder/utils';
 
 const updateQuery = QueryBuilder.update(
 	'table',
@@ -9,4 +10,11 @@ const updateQuery = QueryBuilder.update(
 	}
 );
 
-console.log(updateQuery);
+// console.log(updateQuery);
+
+const selectQuery = QueryBuilder.select({
+	from: 'teste',
+	order: { __expression: [sqlExpression`STR_TO_DATE(${sqlCol('validade')})`] },
+});
+
+console.log(selectQuery);
