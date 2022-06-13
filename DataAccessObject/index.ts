@@ -517,6 +517,17 @@ export class DataAccessObject {
 		);
 	}
 
+	public async databaseExists(database: string) {
+		try {
+			await this.getPoolConnection(async (conn) => {}, {
+				database,
+			});
+			return true;
+		} catch (err) {
+			return false;
+		}
+	}
+
 	private async execute(
 		preparedStatement: PreparedStatement,
 		database?: string
