@@ -1,6 +1,11 @@
 import mysql from 'mysql2';
 import { ConditionOptions } from './select/conditionals/types';
-import { SqlColumn, SqlExpressionPreparedStatement, SqlValues } from './types';
+import {
+	isSqlExpressionPreparedStatement,
+	SqlColumn,
+	SqlExpressionPreparedStatement,
+	SqlValues,
+} from './types';
 
 /**
  * Escapes a value into a valid mysql String representation
@@ -15,23 +20,24 @@ export const escVal = mysql.escape;
  */
 export const sqlExpression = (
 	[firstStr, ...rest]: TemplateStringsArray,
-	...values: Array<SqlValues | SqlColumn>
+	...values: Array<SqlValues | SqlColumn | Record<string, any>>
 ): Record<string, any> => {
-	const statement = rest.reduce(
-		(acc, cur, i) =>
-			`${acc}${
-				values[i] instanceof SqlColumn
-					? safeApplyAlias(
-							escapeNames((values[i] as SqlColumn).column),
-							'__SQL__EXPRESSION__ALIAS__'
-					  )
-					: '?'
-			}${cur}`,
-		firstStr
-	);
-	const prepValues = values.filter(
-		(v) => v instanceof SqlColumn === false
-	) as SqlValues[];
+	const prepValues: SqlValues[] = [];
+	const statement = rest.reduce((acc, cur, i) => {
+		const curVal: SqlColumn | Record<string, any> | SqlValues = values[i];
+		if (curVal instanceof SqlColumn) {
+			return `${acc}${safeApplyAlias(
+				escapeNames((curVal as SqlColumn).column),
+				'__SQL__EXPRESSION__ALIAS__'
+			)}${cur}`;
+		}
+		if (isSqlExpressionPreparedStatement(curVal)) {
+			prepValues.push(...curVal.values);
+			return `${acc}${curVal.statement}${cur}`;
+		}
+		prepValues.push(curVal as SqlValues);
+		return `${acc}?${cur}`;
+	}, firstStr);
 	return {
 		statement,
 		values: prepValues,
