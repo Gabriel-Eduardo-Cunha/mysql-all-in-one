@@ -6,7 +6,10 @@ export type ConditionOptions =
 	| Record<string, any>
 	| undefined;
 
-type ConditionOptionsArray = ['__or' | ConditionOptions, ...ConditionOptions[]];
+export type ConditionOptionsArray = [
+	'__or' | ConditionOptions,
+	...ConditionOptions[]
+];
 
 interface ConditionObject {
 	__or?: boolean;

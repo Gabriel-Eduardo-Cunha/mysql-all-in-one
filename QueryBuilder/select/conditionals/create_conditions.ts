@@ -15,6 +15,7 @@ import {
 } from '../../utils';
 import {
 	ConditionOptions,
+	ConditionOptionsArray,
 	isColumnRelationObject,
 	isOperatorOptionsObject,
 	OperatorOptionsObject,
@@ -55,13 +56,14 @@ const create_conditions = (
 	const prepStatementValues: Array<SqlValues> = [];
 	let isAnd = true;
 	if (Array.isArray(value)) {
+		value = [...value];
 		if (value.length > 0 && value[0] === '__or') {
 			value.shift();
 			isAnd = false;
 		}
 		if (value.length === 0) return { ...emptyPrepStatement };
-		const conditions = value.map((v) =>
-			create_conditions(v as ConditionOptions, alias, secondaryAlias)
+		const conditions = value.map((v: ConditionOptions) =>
+			create_conditions(v, alias, secondaryAlias)
 		);
 		return mergePrepStatements(conditions, isAnd);
 	}
@@ -226,6 +228,7 @@ const create_conditions = (
 	};
 
 	if ('__or' in value) {
+		value = { ...value };
 		delete value['__or'];
 		isAnd = false;
 	}
