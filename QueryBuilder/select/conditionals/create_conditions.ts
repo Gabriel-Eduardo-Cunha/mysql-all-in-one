@@ -38,9 +38,9 @@ const mergePrepStatements = (
 		? { ...emptyPrepStatement }
 		: filteredPrepStatements.reduce(
 				(acc, cur): PreparedStatement => ({
-					statement: `${acc.statement} ${
+					statement: `(${acc.statement} ${
 						isAnd === true ? 'AND' : 'OR'
-					} ${cur.statement}`,
+					} ${cur.statement})`,
 					values: [...acc.values, ...cur.values],
 				})
 		  );

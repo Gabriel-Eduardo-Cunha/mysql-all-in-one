@@ -75,10 +75,7 @@ export const putBackticks = (value: string): string =>
 		? value
 		: `\`${value}\``;
 
-export const putBrackets = (value: string): string =>
-	value.charAt(0) === '(' && value.charAt(value.length - 1) === ')'
-		? value
-		: `(${value})`;
+export const putBrackets = (value: string): string => `(${value})`;
 
 /**
  *
