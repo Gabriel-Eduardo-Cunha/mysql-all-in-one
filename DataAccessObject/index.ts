@@ -523,7 +523,7 @@ export class DataAccessObject {
 				database,
 			});
 			return true;
-		} catch (err) {
+		} catch (err) {			
 			return false;
 		}
 	}
@@ -562,7 +562,7 @@ export class DataAccessObject {
 				: this.pool
 			).getConnection(async (err, conn) => {
 				if (err) {
-					conn?.release();
+					conn?.destroy();					
 					reject(err);
 					return;
 				}
@@ -591,6 +591,7 @@ export class DataAccessObject {
 					}
 					conn.release();
 				} catch (error) {
+					conn.release();
 					return reject(error);
 				}
 			});

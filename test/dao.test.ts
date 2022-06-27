@@ -9,9 +9,11 @@ const dao = new DataAccessObject({
 });
 
 const main = async () => {
-	console.log(await dao.databaseExists('ambisis01'));
-	console.log(await dao.databaseExists('ambisis03'));
-	console.log(await dao.databaseExists('ambisis182'));
-	console.log(await dao.databaseExists('ambisis183'));
+	await dao.select({ from: 'cliente' }, { database: 'ambisis01' });
+	try {
+		await dao.select({ from: 'cliente' }, { database: 'ambisis183' });
+	} catch (error) {}
+	await dao.select({ from: 'cliente' }, { database: 'ambisis01' });
+	await dao.dispose();
 };
 main();
