@@ -6,9 +6,25 @@ const dao = new DataAccessObject({
 	port: 3307,
 	user: 'root',
 	password: '',
+	database: 'ambisis',
 });
 
-const main = async () => {
+const test2 = async () => {
+	console.log(await dao.select({ from: 'cliente' }, {database: 'ambisis01'}));
+	try {
+		console.log(await dao.select({ from: 'cliente' }, {database: 'ambisis563'}));
+	} catch (error) {
+		console.log(error);
+		
+	}
+	console.log(await dao.select({ from: 'cliente', columns: 'database' }));
+
+
+	await dao.dispose();
+};
+test2()
+
+const test1 = async () => {
 	console.log(await dao.databaseExists('ambisis01'));
 	console.log(await dao.databaseExists('ambisis143'));
 	console.log(await dao.databaseExists('ambisis156'));
@@ -18,4 +34,4 @@ const main = async () => {
 	console.log(await dao.databaseExists('ambisis01'));
 	await dao.dispose();
 };
-main();
+// test1();

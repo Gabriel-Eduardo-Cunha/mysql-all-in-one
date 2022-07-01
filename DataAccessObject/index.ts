@@ -562,7 +562,7 @@ export class DataAccessObject {
 				: this.pool
 			).getConnection(async (err, conn) => {
 				if (err) {
-					conn?.destroy();					
+					conn?.destroy();
 					reject(err);
 					return;
 				}
@@ -575,6 +575,13 @@ export class DataAccessObject {
 					if (shouldChangeDatabase) {
 						await this.connChangeUser(conn, {
 							database: database as string,
+						});
+					} else if (
+						this.connectionData.database !== conn.config.database &&
+						isNotEmptyString(this.connectionData.database)
+					) {
+						await this.connChangeUser(conn, {
+							database: this.connectionData.database,
 						});
 					}
 
@@ -591,6 +598,9 @@ export class DataAccessObject {
 					}
 					conn.release();
 				} catch (error) {
+					await this.connChangeUser(conn, {
+						database: this.connectionData.database,
+					});
 					conn.release();
 					return reject(error);
 				}
