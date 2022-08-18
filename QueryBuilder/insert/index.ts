@@ -34,10 +34,11 @@ const buildRow = (
 					return putBrackets(v.statement);
 				}
 				sqlValues.push(v as SqlValues);
-				return '?';
+				return "?";
 			})
-			.join(',')})`,
+			.join(",")})`,
 		values: sqlValues,
+		__is_prep_statement: true,
 	};
 };
 
@@ -65,14 +66,18 @@ const buildInsertRows = (
 					)
 			: buildRow(keys, rows);
 		if (Array.isArray(prepStatement.statement))
-			prepStatement.statement = prepStatement.statement.join(',');
-		return prepStatement;
+			prepStatement.statement = prepStatement.statement.join(",");
+		return {
+			statement: prepStatement.statement as string,
+			values: prepStatement.values,
+			__is_prep_statement: true,
+		};
 	}
 	throw `Invalid rows format for insert object, insert rows must be one or many objects with valid SQL values String | Date | null | boolean | number (undefined is also accepted, but ignored); Insert row object received: ${rows}`;
 };
 
 const buildColumns = (rows: InsertRows, columns?: Array<string>): string => {
-	if (!isInsertRows(rows)) return '';
+	if (!isInsertRows(rows)) return "";
 	return `(${(isArrayOfStrings(columns)
 		? columns
 		: Array.isArray(rows)
@@ -80,7 +85,7 @@ const buildColumns = (rows: InsertRows, columns?: Array<string>): string => {
 		: Object.keys(rows)
 	)
 		.map(putBackticks)
-		.join(',')})`;
+		.join(",")})`;
 };
 
 /**
@@ -104,11 +109,15 @@ const insert = (
 	const insertRowsPrepStatement = buildInsertRows(rows, columns);
 	const values = insertRowsPrepStatement.values;
 	const statement = `INSERT ${
-		ignore === true ? 'IGNORE ' : ''
+		ignore === true ? "IGNORE " : ""
 	}INTO ${putBackticks(table)} ${buildColumns(rows, columns)} VALUES ${
 		insertRowsPrepStatement.statement
 	};`;
-	const prepStatement = { statement, values };
+	const prepStatement: PreparedStatement = {
+		statement,
+		values,
+		__is_prep_statement: true,
+	};
 	return returnPreparedStatement === true
 		? prepStatement
 		: generateQueryFromPreparedStatement(prepStatement);

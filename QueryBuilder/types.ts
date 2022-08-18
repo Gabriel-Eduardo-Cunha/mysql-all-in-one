@@ -5,50 +5,54 @@ export type SqlValues = string | Date | null | boolean | number | undefined;
 export interface PreparedStatement {
 	statement: string;
 	values: Array<SqlValues>;
+	__is_prep_statement: boolean;
 }
 
 export const isSqlValues = (val: any): val is SqlValues =>
 	val === null ||
 	val === undefined ||
-	(['string', 'boolean', 'number', 'object'].includes(typeof val) &&
+	(["string", "boolean", "number", "object"].includes(typeof val) &&
 		!Array.isArray(val) &&
-		(typeof val !== 'object' || val instanceof Date));
+		(typeof val !== "object" || val instanceof Date));
 
 export const isArrayOfStrings = (val: any): val is Array<string> =>
 	val !== undefined &&
 	val !== null &&
 	Array.isArray(val) &&
-	val.every((v) => typeof v === 'string');
+	val.every((v) => typeof v === "string");
 
 export const emptyPrepStatement: PreparedStatement = {
-	statement: '',
+	statement: "",
 	values: [],
+	__is_prep_statement: true,
 };
 export const isPreparedStatement = (val: any): val is PreparedStatement =>
 	val !== undefined &&
 	val !== null &&
 	!Array.isArray(val) &&
-	typeof val === 'object' &&
+	typeof val === "object" &&
 	Object.keys(val).length === 2 &&
-	typeof val.statement === 'string' &&
-	val.statement !== '' &&
+	typeof val.statement === "string" &&
+	val.statement !== "" &&
 	Array.isArray(val.values) &&
 	(val.values.length === 0 || val.values.every((v: any) => isSqlValues(v)));
 
 export const generateQueryFromPreparedStatement = (
 	preparedStatement: PreparedStatement
 ): string => {
-	const { statement, values } = preparedStatement;
-	if (typeof statement !== 'string') return '';
-	if (isPreparedStatement(statement)) return statement || '';
+	let { statement, values } = preparedStatement;
+	if (typeof statement !== "string") return "";
+	if (isPreparedStatement(statement)) return statement || "";
 
-	const pieces = statement.split('?');
+	statement = `${statement.split(";").join("")};`;
+
+	const pieces = statement.split("?");
 	const firstPiece = pieces.shift();
 	return (
 		pieces.reduce(
 			(acc, cur, i) => `${acc}${escVal(values[i])}${cur}`,
 			firstPiece
-		) || ''
+		) || ""
 	);
 };
 

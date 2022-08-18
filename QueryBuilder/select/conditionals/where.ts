@@ -7,8 +7,9 @@ const where = (opts?: ConditionOptions, alias?: string): PreparedStatement => {
 	if (opts === undefined) return { ...emptyPrepStatement };
 	const { statement, values } = create_conditions(opts, alias);
 	return {
-		statement: isNotEmptyString(statement) ? ` WHERE ${statement}` : '',
+		statement: isNotEmptyString(statement) ? ` WHERE ${statement}` : "",
 		values,
+		__is_prep_statement: true,
 	};
 };
 

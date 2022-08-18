@@ -7,8 +7,9 @@ const having = (opts?: ConditionOptions): PreparedStatement => {
 	if (opts === undefined) return { ...emptyPrepStatement };
 	const { statement, values } = create_conditions(opts);
 	return {
-		statement: isNotEmptyString(statement) ? ` HAVING ${statement}` : '',
+		statement: isNotEmptyString(statement) ? ` HAVING ${statement}` : "",
 		values,
+		__is_prep_statement: true,
 	};
 };
 

@@ -53,6 +53,7 @@ const join = (join: SelectJoin, alias?: string): JoinReturnObject => {
 	const joinPrepStatement: PreparedStatement = {
 		statement: sJoins.length !== 0 ? ` ${sJoins.join(' ')}` : '',
 		values: joinPrepStamentValues,
+		__is_prep_statement: true,
 	};
 
 	return {
@@ -60,6 +61,7 @@ const join = (join: SelectJoin, alias?: string): JoinReturnObject => {
 		columnsPreparedStatement: {
 			statement: jColumns,
 			values: jColumnsValues,
+			__is_prep_statement: true,
 		},
 	};
 };

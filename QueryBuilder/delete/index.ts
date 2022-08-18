@@ -39,12 +39,13 @@ const deleteFrom = (
 		alias
 	);
 	const prepStatement: PreparedStatement = {
-		statement: `DELETE ${quick === true ? 'QUICK ' : ''}${
-			ignore === true ? 'IGNORE ' : ''
+		statement: `DELETE ${quick === true ? "QUICK " : ""}${
+			ignore === true ? "IGNORE " : ""
 		}FROM ${tableRef}${whereStatement}${order(orderOpts, alias)}${
-			limit ? ` LIMIT ${limit}` : ''
+			limit ? ` LIMIT ${limit}` : ""
 		};`,
 		values: whereValues,
+		__is_prep_statement: true,
 	};
 	return returnPreparedStatement === true
 		? prepStatement

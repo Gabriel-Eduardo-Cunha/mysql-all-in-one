@@ -2,36 +2,37 @@ import { DataAccessObject, QueryBuilder } from '..';
 import { sqlExpression } from '../QueryBuilder';
 
 const dao = new DataAccessObject({
-	host: 'localhost',
+	host: "localhost",
 	port: 3307,
-	user: 'root',
-	password: '',
-	database: 'ambisis',
+	user: "root",
+	password: "",
 });
 
 const test2 = async () => {
-	console.log(await dao.select({ from: 'cliente' }, {database: 'ambisis01'}));
+	console.log(
+		await dao.select({ from: "cliente" }, { database: "ambisis01" })
+	);
 	try {
-		console.log(await dao.select({ from: 'cliente' }, {database: 'ambisis563'}));
+		console.log(
+			await dao.select({ from: "cliente" }, { database: "ambisis563" })
+		);
 	} catch (error) {
 		console.log(error);
-		
 	}
-	console.log(await dao.select({ from: 'cliente', columns: 'database' }));
-
+	console.log(await dao.select({ from: "cliente", columns: "database" }));
 
 	await dao.dispose();
 };
-test2()
+// test2()
 
 const test1 = async () => {
-	console.log(await dao.databaseExists('ambisis01'));
-	console.log(await dao.databaseExists('ambisis143'));
-	console.log(await dao.databaseExists('ambisis156'));
-	console.log(await dao.databaseExists('ambisis116'));
-	console.log(await dao.databaseExists('ambisis176'));
-	console.log(await dao.databaseExists('ambisis136'));
-	console.log(await dao.databaseExists('ambisis01'));
+	console.log(await dao.databaseExists("ambisis01"));
+	console.log(await dao.databaseExists("ambisis143"));
+	console.log(await dao.databaseExists("ambisis156"));
+	console.log(await dao.databaseExists("ambisis181"));
+	console.log(await dao.databaseExists("ambisis116"));
+	console.log(await dao.databaseExists("ambisis176"));
+	console.log(await dao.databaseExists("ambisis01"));
 	await dao.dispose();
 };
-// test1();
+test1();

@@ -43,6 +43,7 @@ const mergePrepStatements = (
 						isAnd === true ? 'AND' : 'OR'
 					} ${cur.statement})`,
 					values: [...acc.values, ...cur.values],
+					__is_prep_statement: true,
 				})
 		  );
 };
@@ -80,7 +81,7 @@ const create_conditions = (
 					? `${alias}.`
 					: ''
 			);
-		return { values: value.values, statement: value.statement };
+		return { values: value.values, statement: value.statement, __is_prep_statement: true, };
 	}
 
 	const operation = (
@@ -258,7 +259,7 @@ const create_conditions = (
 		.filter((v) => v !== undefined)
 		.join(isAnd ? ' AND ' : ' OR ');
 	prepStatementQuery = conditions ? `(${conditions})` : '';
-	return { statement: prepStatementQuery, values: prepStatementValues };
+	return { statement: prepStatementQuery, values: prepStatementValues, __is_prep_statement: true, };
 };
 
 export default create_conditions;

@@ -72,6 +72,7 @@ const update = (
 	const prepStatement: PreparedStatement = {
 		statement: prepStatementQuery,
 		values: prepStatementValues,
+		__is_prep_statement: true,
 	};
 	return returnPreparedStatement === true
 		? prepStatement

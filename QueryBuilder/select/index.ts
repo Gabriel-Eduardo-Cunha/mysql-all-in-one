@@ -122,11 +122,12 @@ const select = (opts: SelectOptions): PreparedStatement => {
 		prepStatementValues.push(...unionValues);
 		sUnion = ` UNION ${unionStatement}`;
 	}
-	const prepStatement: PreparedStatement = {
+	const prepStatement = {
 		statement: `SELECT ${sColumns}${
-			jColumns ? `,${jColumns}` : ''
+			jColumns ? `,${jColumns}` : ""
 		}${sFrom}${sJoin}${sWhere}${sGroup}${sHaving}${sOrder}${sLimit}${sOffset}${sUnion}`,
 		values: prepStatementValues,
+		__is_prep_statement: true,
 	};
 	return prepStatement;
 };

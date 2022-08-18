@@ -16,21 +16,23 @@ const create_columns = (
 	columns?: SelectColumns,
 	alias?: string
 ): PreparedStatement => {
-	if (typeof columns === 'string') {
-		if (columns === '*') {
-			return { statement: '*', values: [] };
+	if (typeof columns === "string") {
+		if (columns === "*") {
+			return { statement: "*", values: [], __is_prep_statement: true };
 		}
-		if (columns.endsWith('.*')) {
+		if (columns.endsWith(".*")) {
 			return {
 				statement: `${escapeNames(
 					columns.substring(0, columns.length - 2)
 				)}.*`,
 				values: [],
+				__is_prep_statement: true,
 			};
 		}
 		return {
 			statement: safeApplyAlias(escapeNames(columns), alias),
 			values: [],
+			__is_prep_statement: true,
 		};
 	}
 	if (Array.isArray(columns)) {
@@ -43,13 +45,22 @@ const create_columns = (
 					acc.values.push(...cur.values);
 					return acc;
 				},
-				{ statement: [] as any, values: [] as SqlValues[] }
+				{
+					statement: [] as string[],
+					values: [] as SqlValues[],
+					__is_prep_statement: true,
+				}
 			);
-		prepStatemnt.statement = prepStatemnt.statement.join(',');
-		return prepStatemnt;
+		const statementQuery = prepStatemnt.statement.join(",");
+		prepStatemnt.__is_prep_statement = true;
+		return {
+			statement: statementQuery,
+			values: prepStatemnt.values,
+			__is_prep_statement: true,
+		};
 	}
 	if (
-		typeof columns === 'object' &&
+		typeof columns === "object" &&
 		columns !== null &&
 		columns !== undefined
 	) {
@@ -64,7 +75,7 @@ const create_columns = (
 						val = placeAliasInSqlExpression(val, alias);
 						return `${val.statement} AS ${columnAlias}`;
 					}
-					if (typeof val !== 'string') {
+					if (typeof val !== "string") {
 						throw `Incorrect columns object. Type error: expected string received "${typeof val}" value: ${val}`;
 					}
 
@@ -75,13 +86,15 @@ const create_columns = (
 					if (val === key) return columnRef;
 					return `${columnRef} AS ${columnAlias}`;
 				})
-				.join(','),
+				.join(","),
 			values,
+			__is_prep_statement: true,
 		};
 	}
 	return {
-		statement: typeof alias === 'string' ? `${alias}.*` : '*',
+		statement: typeof alias === "string" ? `${alias}.*` : "*",
 		values: [],
+		__is_prep_statement: true,
 	};
 };
 
