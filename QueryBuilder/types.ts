@@ -60,7 +60,7 @@ export class SqlColumn {
 	constructor(public column: string) {}
 }
 export class SqlExp {
-	constructor(public column: string) {}
+	constructor(public expression: string) {}
 }
 
 export interface SqlExpressionPreparedStatement {

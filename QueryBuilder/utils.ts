@@ -27,7 +27,7 @@ export const sqlExpression = (
 	const statement = rest.reduce((acc, cur, i) => {
 		const curVal: SqlColumn | Record<string, any> | SqlValues = values[i];
 		if (curVal instanceof SqlExp) {
-			return `${acc}${curVal}${cur}`;
+			return `${acc}${curVal.expression}${cur}`;
 		}
 		if (curVal instanceof SqlColumn) {
 			return `${acc}${safeApplyAlias(
