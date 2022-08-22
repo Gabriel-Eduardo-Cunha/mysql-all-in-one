@@ -59,6 +59,9 @@ export const generateQueryFromPreparedStatement = (
 export class SqlColumn {
 	constructor(public column: string) {}
 }
+export class SqlExp {
+	constructor(public column: string) {}
+}
 
 export interface SqlExpressionPreparedStatement {
 	statement: string;
