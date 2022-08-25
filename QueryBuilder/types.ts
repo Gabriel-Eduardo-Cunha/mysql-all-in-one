@@ -31,9 +31,10 @@ export const isPreparedStatement = (val: any): val is PreparedStatement =>
 	val !== null &&
 	!Array.isArray(val) &&
 	typeof val === "object" &&
-	Object.keys(val).length === 2 &&
+	Object.keys(val).length === 3 &&
 	typeof val.statement === "string" &&
 	val.statement !== "" &&
+	val.__is_prep_statement === true &&
 	Array.isArray(val.values) &&
 	(val.values.length === 0 || val.values.every((v: any) => isSqlValues(v)));
 
