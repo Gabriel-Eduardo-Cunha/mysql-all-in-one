@@ -2,11 +2,11 @@ import { DataAccessObject, QueryBuilder } from '../';
 import { sqlExpression } from '../QueryBuilder';
 
 const dao = new DataAccessObject({
-	host: 'localhost',
+	host: "localhost",
 	port: 3307,
-	user: 'root',
-	password: '',
-	database: 'ambisissuprassumo',
+	user: "root",
+	password: "",
+	database: "ambisis01",
 });
 
 // dao.select({ from: 'update' }).then((r) => console.log(r));

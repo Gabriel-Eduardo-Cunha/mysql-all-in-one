@@ -1,10 +1,13 @@
 import { PoolConnection } from 'mysql2';
-import { InsertRows } from '../QueryBuilder/insert/types';
+import { DeleteOptions } from "../QueryBuilder/delete/types";
+import { InsertOptions, InsertRows } from "../QueryBuilder/insert/types";
+import { ConditionOptions } from "../QueryBuilder/select/conditionals/types";
 import {
 	isArrayOfStrings,
 	SqlValues,
 	isSqlValues,
-} from '../QueryBuilder/types';
+} from "../QueryBuilder/types";
+import { UpdateOptions, UpdateValues } from "../QueryBuilder/update/types";
 
 interface RenamedColumns {
 	[new_name: string]: string;
@@ -12,7 +15,7 @@ interface RenamedColumns {
 export const isRenamedColumns = (val: any): val is RenamedColumns =>
 	val !== undefined &&
 	val !== null &&
-	typeof val === 'object' &&
+	typeof val === "object" &&
 	!Array.isArray(val) &&
 	isArrayOfStrings(Object.values(val));
 
@@ -22,12 +25,12 @@ export interface ColumnGroups {
 export const isColumnGroups = (val: any): val is ColumnGroups =>
 	val !== undefined &&
 	val !== null &&
-	typeof val === 'object' &&
+	typeof val === "object" &&
 	!Array.isArray(val) &&
 	Object.values(val).every((v) => isRenamedColumns(v) || isArrayOfStrings(v));
 
 export const isRowDataPacket = (val: any): val is RowDataPacket =>
-	typeof val === 'object' &&
+	typeof val === "object" &&
 	!Array.isArray(val) &&
 	val !== null &&
 	Object.values(val).every((v) => isSqlValues(v) || isDataPacket(v));
@@ -44,7 +47,7 @@ export const isColumnValues = (val: any): val is ColumnValues =>
 type ColumnValues = Array<SqlValues>;
 
 export const defaultDataSelectOptions: DataSelectOptions = {
-	returnMode: 'normal',
+	returnMode: "normal",
 };
 
 export interface DataSelectOptions {
@@ -58,11 +61,11 @@ export interface DataSelectOptions {
 	 * @default 'normal'
 	 */
 	returnMode?:
-		| 'normal'
-		| 'firstRow'
-		| 'firstValue'
-		| 'firstColumn'
-		| 'specific';
+		| "normal"
+		| "firstRow"
+		| "firstValue"
+		| "firstColumn"
+		| "specific";
 	/**
 	 * @description If used with returnMode 'specific' will return a specific row number (starting from 0)
 	 * @example specificRow: 3 //Will return the fourth row of the array
@@ -131,9 +134,9 @@ export const isGroupDataOptions = (val: any): val is GroupDataOptions =>
 	val !== undefined &&
 	val !== null &&
 	!Array.isArray(val) &&
-	typeof val === 'object' &&
+	typeof val === "object" &&
 	Object.values(val).length === 2 &&
-	typeof val.by === 'string' &&
+	typeof val.by === "string" &&
 	val.by.length !== 0 &&
 	isColumnGroups(val.columnGroups);
 
@@ -176,7 +179,7 @@ export interface DatabaseSelected {
 }
 
 export const defaultUpsertOptions: UpsertOptions = {
-	primaryKey: 'id',
+	primaryKey: "id",
 };
 export interface UpsertOptions {
 	/**
@@ -184,6 +187,32 @@ export interface UpsertOptions {
 	 * @default "id"
 	 */
 	primaryKey?: string;
+}
+
+export interface Transaction {
+	delete: (
+		table: string,
+		whereOpts?: ConditionOptions,
+		opts?: DeleteOptions
+	) => Promise<number>;
+	insert: (
+		table: string,
+		rows: InsertRows,
+		opts?: InsertOptionsDAO & InsertOptions
+	) => Promise<number | number[] | null>;
+	update: (
+		table: string,
+		values: UpdateValues,
+		whereOpts?: ConditionOptions,
+		opts?: UpdateOptions
+	) => Promise<number>;
+	upsert: (
+		table: string,
+		rows: UpsertRow,
+		opts?: UpsertOptions
+	) => Promise<number | number[] | null>;
+	commit: () => Promise<void>;
+	rollback: () => Promise<void>;
 }
 
 export type UpsertRow = InsertRows;

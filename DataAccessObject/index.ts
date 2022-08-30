@@ -5,25 +5,25 @@ import mysql, {
 	PoolConnection,
 	Connection,
 	ConnectionOptions,
-} from 'mysql2';
-import fs from 'fs';
-import { mysqlSplitterOptions, splitQuery } from 'dbgate-query-splitter';
-import { SelectOptions } from '../QueryBuilder/select/types';
+} from "mysql2";
+import fs from "fs";
+import { mysqlSplitterOptions, splitQuery } from "dbgate-query-splitter";
+import { SelectOptions } from "../QueryBuilder/select/types";
 import {
 	generateQueryFromPreparedStatement,
 	isPreparedStatement,
 	isSqlValues,
 	PreparedStatement,
 	SqlValues,
-} from '../QueryBuilder/types';
-import { isNotEmptyString, putBackticks } from '../QueryBuilder/utils';
+} from "../QueryBuilder/types";
+import { isNotEmptyString, putBackticks } from "../QueryBuilder/utils";
 import {
 	escStr,
 	select as QuerySelect,
 	insert as QueryInsert,
 	update as QueryUpdate,
 	deleteFrom as QueryDelete,
-} from '../QueryBuilder';
+} from "../QueryBuilder";
 import {
 	DataPacket,
 	DataSelectOptions,
@@ -42,17 +42,18 @@ import {
 	isRowDataPacket,
 	isDataPacket,
 	isColumnValues,
-} from './types';
-import { arrayUnflat, group, statementsMerge } from './utils';
-import { ConditionOptions } from '../QueryBuilder/select/conditionals/types';
-import { DeleteOptions } from '../QueryBuilder/delete/types';
-import { UpdateOptions, UpdateValues } from '../QueryBuilder/update/types';
+	Transaction,
+} from "./types";
+import { arrayUnflat, group, statementsMerge } from "./utils";
+import { ConditionOptions } from "../QueryBuilder/select/conditionals/types";
+import { DeleteOptions } from "../QueryBuilder/delete/types";
+import { UpdateOptions, UpdateValues } from "../QueryBuilder/update/types";
 import {
 	InsertOptions,
 	InsertRows,
 	isInsertRows,
-} from '../QueryBuilder/insert/types';
-import { exec } from 'child_process';
+} from "../QueryBuilder/insert/types";
+import { exec } from "child_process";
 
 /**
  * @description With a DataAccessObject instance is possible to execute commands, dump databases and load dumps (or any .sql file)
@@ -99,7 +100,7 @@ export class DataAccessObject {
 			//Connection is OK
 		}).catch((err) => {
 			console.error(
-				'Could not start connection, check your connection credencials.'
+				"Could not start connection, check your connection credencials."
 			);
 			throw err;
 		});
@@ -118,8 +119,8 @@ export class DataAccessObject {
 		return new Promise((resolve, reject) => {
 			const { host, user, password, port } = this.connectionData;
 			exec(
-				`mysqldump -h ${host}${port ? ` -P ${port}` : ''} -u ${user}${
-					password ? ` -p${password}` : ''
+				`mysqldump -h ${host}${port ? ` -P ${port}` : ""} -u ${user}${
+					password ? ` -p${password}` : ""
 				} ${database} > "${filePath}"`,
 				(err) => {
 					if (err) return reject(err);
@@ -183,17 +184,17 @@ export class DataAccessObject {
 	 */
 	public async loadSqlFile(database: string, sqlFilePath: string) {
 		try {
-			const sql = fs.readFileSync(sqlFilePath, 'utf8');
+			const sql = fs.readFileSync(sqlFilePath, "utf8");
 
 			const sqlStatements = splitQuery(
 				sql,
 				mysqlSplitterOptions
 			) as Array<string>;
 			const maxAllowedPacket = parseInt(
-				await this.getServerVariable('max_allowed_packet')
+				await this.getServerVariable("max_allowed_packet")
 			);
 
-			if (maxAllowedPacket && typeof maxAllowedPacket === 'number') {
+			if (maxAllowedPacket && typeof maxAllowedPacket === "number") {
 				const statementGroups = statementsMerge(
 					sqlStatements,
 					maxAllowedPacket / 2
@@ -257,20 +258,20 @@ export class DataAccessObject {
 			}
 			if (!isDataPacket(resultSet)) return null;
 			switch (returnMode) {
-				case 'normal':
+				case "normal":
 					return isDataPacket(resultSet) ? resultSet : null;
-				case 'firstRow':
+				case "firstRow":
 					return isRowDataPacket(resultSet?.[0])
 						? resultSet[0]
 						: null;
-				case 'firstColumn':
+				case "firstColumn":
 					const columnValues = resultSet.map((row) =>
-						typeof row === 'object'
+						typeof row === "object"
 							? Object.values(row)?.[0]
 							: undefined
 					);
 					return isColumnValues(columnValues) ? columnValues : null;
-				case 'firstValue':
+				case "firstValue":
 					const firstRow = resultSet[0];
 					if (!isRowDataPacket(firstRow)) return null;
 					const firstRowValues = Object.values(firstRow);
@@ -278,7 +279,7 @@ export class DataAccessObject {
 						isSqlValues(firstRowValues[0])
 						? firstRowValues[0]
 						: null;
-				case 'specific':
+				case "specific":
 					if (
 						specificRow === undefined &&
 						specificColumn === undefined
@@ -286,7 +287,7 @@ export class DataAccessObject {
 						return resultSet;
 					if (
 						specificRow !== undefined &&
-						typeof specificRow === 'number' &&
+						typeof specificRow === "number" &&
 						resultSet.length > specificRow &&
 						isRowDataPacket(resultSet[specificRow])
 					) {
@@ -294,7 +295,7 @@ export class DataAccessObject {
 					}
 					if (
 						specificColumn !== undefined &&
-						typeof specificColumn === 'string' &&
+						typeof specificColumn === "string" &&
 						resultSet.length !== 0 &&
 						resultSet.every(
 							(row) =>
@@ -326,7 +327,8 @@ export class DataAccessObject {
 	public async delete(
 		table: string,
 		whereOpts?: ConditionOptions,
-		opts?: DeleteOptions & DatabaseSelected
+		opts?: DeleteOptions & DatabaseSelected,
+		conn?: PoolConnection
 	) {
 		try {
 			const { database } = { ...opts };
@@ -337,7 +339,8 @@ export class DataAccessObject {
 			}) as PreparedStatement;
 			const result = (await this.executionMethod(
 				preparedStatement,
-				database
+				database,
+				conn
 			)) as OkPacket;
 			return result.affectedRows;
 		} catch (error) {
@@ -358,7 +361,8 @@ export class DataAccessObject {
 		table: string,
 		values: UpdateValues,
 		whereOpts?: ConditionOptions,
-		opts?: UpdateOptions & DatabaseSelected
+		opts?: UpdateOptions & DatabaseSelected,
+		conn?: PoolConnection
 	) {
 		try {
 			const { database } = { ...opts };
@@ -369,7 +373,8 @@ export class DataAccessObject {
 			}) as PreparedStatement;
 			const result = (await this.executionMethod(
 				preparedStatement,
-				database
+				database,
+				conn
 			)) as OkPacket;
 			return result.affectedRows;
 		} catch (error) {
@@ -388,7 +393,8 @@ export class DataAccessObject {
 	public async insert(
 		table: string,
 		rows: InsertRows,
-		opts?: InsertOptionsDAO & InsertOptions & DatabaseSelected
+		opts?: InsertOptionsDAO & InsertOptions & DatabaseSelected,
+		conn?: PoolConnection
 	) {
 		try {
 			opts = { ...opts, returnPreparedStatement: true };
@@ -402,7 +408,7 @@ export class DataAccessObject {
 				if (
 					rowsPerStatement !== undefined &&
 					rowsPerStatement !== null &&
-					typeof rowsPerStatement === 'number' &&
+					typeof rowsPerStatement === "number" &&
 					rowsPerStatement > 0
 				) {
 					const rowsGroups = arrayUnflat(rows, rowsPerStatement);
@@ -413,7 +419,11 @@ export class DataAccessObject {
 							opts
 						) as PreparedStatement;
 
-						await this.executionMethod(preparedStatement, database);
+						await this.executionMethod(
+							preparedStatement,
+							database,
+							conn
+						);
 					}
 					return null;
 				}
@@ -427,7 +437,8 @@ export class DataAccessObject {
 
 					const result = (await this.executionMethod(
 						preparedStatement,
-						database
+						database,
+						conn
 					)) as OkPacket;
 					insertedIds.push(result.insertId);
 				}
@@ -453,12 +464,13 @@ export class DataAccessObject {
 	public async upsert(
 		table: string,
 		rows: UpsertRow,
-		opts?: UpsertOptions & DatabaseSelected
+		opts?: UpsertOptions & DatabaseSelected,
+		conn?: PoolConnection
 	) {
 		try {
 			opts = { ...defaultUpsertOptions, ...opts };
 			const { primaryKey, database } = opts;
-			if (!isInsertRows(rows) || typeof primaryKey !== 'string')
+			if (!isInsertRows(rows) || typeof primaryKey !== "string")
 				return null;
 			if (!Array.isArray(rows)) rows = [rows];
 			const affectedIds: Array<number> = [];
@@ -466,16 +478,16 @@ export class DataAccessObject {
 				if (row[primaryKey] !== undefined) {
 					const where: ConditionOptions = {};
 					where[primaryKey] = row[primaryKey];
-					await this.update(table, row, where, { database });
+					await this.update(table, row, where, { database }, conn);
 					const primaryKeyValue = row[primaryKey];
 					if (
 						primaryKeyValue !== null &&
 						primaryKeyValue !== undefined &&
-						(typeof primaryKeyValue === 'number' ||
-							(typeof primaryKeyValue === 'string' &&
+						(typeof primaryKeyValue === "number" ||
+							(typeof primaryKeyValue === "string" &&
 								!isNaN(+primaryKeyValue)))
 					) {
-						if (typeof primaryKeyValue === 'string') {
+						if (typeof primaryKeyValue === "string") {
 							affectedIds.push(parseInt(primaryKeyValue));
 							continue;
 						}
@@ -483,8 +495,13 @@ export class DataAccessObject {
 					}
 					continue;
 				}
-				const insertedId = await this.insert(table, row, { database });
-				if (typeof insertedId === 'number')
+				const insertedId = await this.insert(
+					table,
+					row,
+					{ database },
+					conn
+				);
+				if (typeof insertedId === "number")
 					affectedIds.push(insertedId);
 			}
 			return affectedIds.length === 0
@@ -504,17 +521,24 @@ export class DataAccessObject {
 	 * @returns Query response.
 	 * @example query('SELECT * FROM `table`, 'mydatabase');
 	 */
-	public async query(sql: string | PreparedStatement, database?: string) {
-		return await this.getPoolConnection(
-			async (conn) => {
-				try {
-					return await this.connQuery(conn, sql);
-				} catch (error) {
-					throw error;
-				}
-			},
-			{ database }
-		);
+	public async query(
+		sql: string | PreparedStatement,
+		database?: string,
+		conn?: PoolConnection
+	) {
+		try {
+			const connectionCallback = async (conn: PoolConnection) => {
+				return await this.connQuery(conn, sql);
+			};
+			if (conn !== undefined) {
+				return connectionCallback(conn);
+			}
+			return await this.getPoolConnection(connectionCallback, {
+				database,
+			});
+		} catch (error) {
+			throw error;
+		}
 	}
 
 	public async databaseExists(database: string) {
@@ -523,32 +547,176 @@ export class DataAccessObject {
 				database,
 			});
 			return true;
-		} catch (err) {			
+		} catch (err) {
 			return false;
 		}
 	}
 
+	/**
+	 * @description Creates a transaction, able to execute Insert, Update, Delete or even Upsert. When finished, the transaction can be commited, or in case of failure, it can be rollbacked.
+	 * @param database Database selected during the transaction.
+	 * @returns Transaction Object
+	 * @example const transaction = await dao.startTransaction();
+	try {
+		await transaction.insert("arquivo", {
+			module: "1",
+			moduleId: 123,
+			keyS3: "/row
+			",
+			name: "avc",
+		});
+		await transaction.insert("arquivo", {
+			module: "2",
+			moduleId: 123,
+			keyS3: "/row",
+			name: "avc",
+		});
+		await transaction.update(
+			"arquivo",
+			{ keyS3: "UPDATED_S3" },
+			{ module: 2 }
+		);
+
+		await transaction.delete("arquivo", { module: 1 });
+		await transaction.delete("unknow_table" , {
+			module: 2,
+		});
+
+		await transaction.commit();
+	} catch (err) {
+		await transaction.rollback();
+		throw err;
+	}
+	 */
+	public async startTransaction(database?: string): Promise<Transaction> {
+		return new Promise((res, rej) => {
+			try {
+				return this.getPoolConnection(
+					(conn) => {
+						return new Promise<void>(
+							(resolveTransaction, rejectTransaction) => {
+								conn.beginTransaction((err) => {
+									if (err) {
+										rejectTransaction(err);
+										return rej(err);
+									}
+									return res({
+										delete: (
+											table: string,
+											whereOpts?: ConditionOptions,
+											opts?: DeleteOptions
+										) =>
+											this.delete(
+												table,
+												whereOpts,
+												opts,
+												conn
+											),
+										insert: (
+											table: string,
+											rows: InsertRows,
+											opts?: InsertOptionsDAO &
+												InsertOptions
+										) =>
+											this.insert(
+												table,
+												rows,
+												opts,
+												conn
+											),
+										update: (
+											table: string,
+											values: UpdateValues,
+											whereOpts?: ConditionOptions,
+											opts?: UpdateOptions
+										) =>
+											this.update(
+												table,
+												values,
+												whereOpts,
+												opts,
+												conn
+											),
+										upsert: (
+											table: string,
+											rows: UpsertRow,
+											opts?: UpsertOptions
+										) =>
+											this.upsert(
+												table,
+												rows,
+												opts,
+												conn
+											),
+										commit: () =>
+											new Promise<void>((res, rej) => {
+												conn.commit((err) => {
+													if (err) {
+														return conn.rollback(
+															() => {
+																rej(err);
+																rejectTransaction(
+																	err
+																);
+															}
+														);
+													}
+													resolveTransaction();
+													return res();
+												});
+											}),
+										rollback: async () =>
+											new Promise<void>((res, rej) => {
+												try {
+													return conn.rollback(
+														function () {
+															resolveTransaction();
+															return res();
+														}
+													);
+												} catch (error) {
+													rejectTransaction(error);
+													return rej(error);
+												}
+											}),
+									});
+								});
+							}
+						);
+					},
+					{ database }
+				);
+			} catch (error) {
+				rej(error);
+			}
+		});
+	}
+
 	private async execute(
 		preparedStatement: PreparedStatement,
-		database?: string
+		database?: string,
+		conn?: PoolConnection
 	) {
 		try {
-			return await this.getPoolConnection(
-				async (conn) => {
-					try {
-						return await this.connExecute(conn, preparedStatement);
-					} catch (error) {
-						throw error;
-					}
-				},
-				{ database }
-			);
+			const connectionCallback = async (conn: PoolConnection) => {
+				try {
+					return await this.connExecute(conn, preparedStatement);
+				} catch (error) {
+					throw error;
+				}
+			};
+			if (conn !== undefined) {
+				return await connectionCallback(conn);
+			}
+			return await this.getPoolConnection(connectionCallback, {
+				database,
+			});
 		} catch (error) {
 			throw error;
 		}
 	}
 
-	private getPoolConnection(
+	public getPoolConnection(
 		callback: GetPoolConnectionCallback,
 		opts?: GetPoolConnectionOptions
 	) {
@@ -567,45 +735,48 @@ export class DataAccessObject {
 					return;
 				}
 				try {
-					const shouldChangeDatabase =
-						isNotEmptyString(database) &&
-						database !== this.connectionData.database;
-
-					// Change to the desired database
-					if (shouldChangeDatabase) {
-						await this.connChangeUser(conn, {
-							database: database as string,
-						});
-					} else if (
-						this.connectionData.database !== conn.config.database &&
-						isNotEmptyString(this.connectionData.database)
-					) {
-						await this.connChangeUser(conn, {
-							database: this.connectionData.database,
-						});
-					}
+					await this.connUseDatabase(conn, database);
 
 					resolve(await callback(conn));
 
-					// Change back to the original connection database
-					if (
-						shouldChangeDatabase &&
-						isNotEmptyString(this.connectionData.database)
-					) {
-						await this.connChangeUser(conn, {
-							database: this.connectionData.database,
-						});
-					}
+					await this.connUseDefaultDatabase(conn);
+
 					conn.release();
 				} catch (error) {
-					await this.connChangeUser(conn, {
-						database: this.connectionData.database,
-					});
+					await this.connUseDefaultDatabase(conn);
 					conn.release();
 					return reject(error);
 				}
 			});
 		});
+	}
+
+	private async connUseDatabase(conn: PoolConnection, database?: string) {
+		const shouldChangeDatabase =
+			isNotEmptyString(database) &&
+			database !== this.connectionData.database;
+
+		// Change to the desired database
+		if (shouldChangeDatabase) {
+			await this.connChangeUser(conn, {
+				database: database as string,
+			});
+		} else if (
+			this.connectionData.database !== conn.config.database &&
+			isNotEmptyString(this.connectionData.database)
+		) {
+			await this.connChangeUser(conn, {
+				database: this.connectionData.database,
+			});
+		}
+	}
+	private async connUseDefaultDatabase(conn: PoolConnection) {
+		// Change back to the original connection database
+		if (isNotEmptyString(this.connectionData.database)) {
+			await this.connChangeUser(conn, {
+				database: this.connectionData.database,
+			});
+		}
 	}
 
 	private connExecute(
