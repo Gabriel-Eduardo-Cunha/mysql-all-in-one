@@ -112,6 +112,10 @@ export interface DataSelectOptions {
 	 * ]
 	 */
 	groupData?: GroupDataOptions;
+	/**
+	 * @description If "prepared-statement" will prepare and execute the query, if "query" is passed, will execute the query normally. If not defined, will used the default value defined in data access object initialization
+	 */
+	executionMode?: "prepared-statement" | "query";
 }
 
 interface GroupDataOptions {

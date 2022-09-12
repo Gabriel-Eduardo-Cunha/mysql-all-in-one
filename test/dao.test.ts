@@ -10,20 +10,20 @@ const dao = new DataAccessObject({
 
 const test2 = async () => {
 	console.log(
-		await dao.select({ from: "cliente" }, { database: "ambisis01" })
+		await dao.select({ from: "cliente" }, { database: "ambisis01" , executionMode: 'query'})
 	);
-	try {
-		console.log(
-			await dao.select({ from: "cliente" }, { database: "ambisis563" })
-		);
-	} catch (error) {
-		console.log(error);
-	}
-	console.log(await dao.select({ from: "cliente", columns: "database" }));
-
 	await dao.dispose();
+	// try {
+	// 	console.log(
+	// 		await dao.select({ from: "cliente" }, { database: "ambisis563" })
+	// 	);
+	// } catch (error) {
+	// 	console.log(error);
+	// }
+	// console.log(await dao.select({ from: "cliente", columns: "database" }));
+
 };
-// test2()
+test2()
 
 const test1 = async () => {
 	console.log(await dao.databaseExists("ambisis01"));
@@ -35,4 +35,4 @@ const test1 = async () => {
 	console.log(await dao.databaseExists("ambisis01"));
 	await dao.dispose();
 };
-test1();
+// test1();

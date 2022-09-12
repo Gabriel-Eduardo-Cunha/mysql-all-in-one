@@ -236,6 +236,7 @@ export class DataAccessObject {
 				specificRow,
 				groupData,
 				database,
+				executionMode,
 			} = {
 				...defaultDataSelectOptions,
 				...opts,
@@ -244,10 +245,24 @@ export class DataAccessObject {
 				...selectOpts,
 				returnPreparedStatement: true,
 			}) as PreparedStatement;
-			let resultSet = (await this.executionMethod(
-				prepStatement,
-				database
-			)) as DataPacket;
+
+			let resultSet;
+			if (executionMode === "query") {
+				resultSet = (await this.query(
+					prepStatement,
+					database
+				)) as DataPacket;
+			} else if (executionMode === "prepared-statement") {
+				resultSet = (await this.execute(
+					prepStatement,
+					database
+				)) as DataPacket;
+			} else {
+				resultSet = (await this.executionMethod(
+					prepStatement,
+					database
+				)) as DataPacket;
+			}
 			if (!Array.isArray(resultSet)) return resultSet;
 			if (isGroupDataOptions(groupData)) {
 				resultSet = group(
