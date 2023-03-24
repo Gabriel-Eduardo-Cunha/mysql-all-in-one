@@ -416,6 +416,7 @@ export class DataAccessObject {
 			const { rowsPerStatement, database } = {
 				...opts,
 			};
+			const isArrayOfRows = Array.isArray(rows);
 			delete opts?.rowsPerStatement;
 			delete opts?.database;
 			if (isInsertRows(rows)) {
@@ -459,7 +460,7 @@ export class DataAccessObject {
 				}
 				return insertedIds.length === 0
 					? null
-					: insertedIds.length === 1
+					: insertedIds.length === 1 && !isArrayOfRows
 					? insertedIds[0]
 					: insertedIds;
 			}
