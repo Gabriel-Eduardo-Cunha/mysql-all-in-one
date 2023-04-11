@@ -3,9 +3,10 @@ import { sqlExpression } from '../QueryBuilder';
 
 const dao = new DataAccessObject({
 	host: "localhost",
-	port: 3307,
+	port: 3306,
 	user: "root",
 	password: "",
+	database: "ambisis",
 });
 
 const test2 = async () => {
@@ -23,7 +24,7 @@ const test2 = async () => {
 	// console.log(await dao.select({ from: "cliente", columns: "database" }));
 
 };
-test2()
+// test2()
 
 const test1 = async () => {
 	console.log(await dao.databaseExists("ambisis01"));
@@ -35,4 +36,4 @@ const test1 = async () => {
 	console.log(await dao.databaseExists("ambisis01"));
 	await dao.dispose();
 };
-// test1();
+test1();

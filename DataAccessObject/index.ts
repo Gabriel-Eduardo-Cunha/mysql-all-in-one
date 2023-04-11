@@ -559,9 +559,7 @@ export class DataAccessObject {
 
 	public async databaseExists(database: string) {
 		try {
-			await this.getPoolConnection(async (conn) => {}, {
-				database,
-			});
+			await this.query(`USE ${database}`);
 			return true;
 		} catch (err) {
 			return false;
@@ -741,29 +739,33 @@ export class DataAccessObject {
 			...opts,
 		};
 		return new Promise((resolve, reject) => {
-			(multipleStatements === true
-				? this.multipleStatementsPool
-				: this.pool
-			).getConnection(async (err, conn) => {
-				if (err) {
-					conn?.destroy();
-					reject(err);
-					return;
-				}
-				try {
-					await this.connUseDatabase(conn, database);
-
-					resolve(await callback(conn));
-
-					await this.connUseDefaultDatabase(conn);
-
-					conn.release();
-				} catch (error) {
-					await this.connUseDefaultDatabase(conn);
-					conn.release();
-					return reject(error);
-				}
-			});
+			try {
+				(multipleStatements === true
+					? this.multipleStatementsPool
+					: this.pool
+				).getConnection(async (err, conn) => {
+					if (err) {						
+						conn?.destroy();
+						reject(err);
+						return;
+					}
+					try {
+						await this.connUseDatabase(conn, database);
+	
+						resolve(await callback(conn));
+	
+						await this.connUseDefaultDatabase(conn);
+	
+						conn.release();
+					} catch (error) {
+						await this.connUseDefaultDatabase(conn);
+						conn.release();
+						return reject(error);
+					}
+				});
+			} catch (error) {
+				reject(error);
+			}
 		});
 	}
 
