@@ -118,7 +118,7 @@ export interface DataSelectOptions {
 	executionMode?: "prepared-statement" | "query";
 }
 
-interface GroupDataOptions {
+export interface GroupDataOptions {
 	/**
 	 * @description Column that will be used to confirm row indentity (usually the primary key like an `id`)
 	 * @example by: 'id'
