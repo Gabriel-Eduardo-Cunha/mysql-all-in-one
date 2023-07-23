@@ -11,7 +11,7 @@ export type ConditionOptionsArray = [
 	...ConditionOptions[]
 ];
 
-interface ConditionObject {
+export interface ConditionObject {
 	__or?: boolean;
 	__col_relation?: ColumnRelationObject;
 	[k: string]:
@@ -24,7 +24,7 @@ interface ConditionObject {
 	[y: number]: never;
 }
 
-interface ColumnRelationObject {
+export interface ColumnRelationObject {
 	[k: string]: string;
 }
 export const isColumnRelationObject = (
