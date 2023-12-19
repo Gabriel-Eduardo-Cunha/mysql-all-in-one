@@ -14,7 +14,6 @@ import {
 	isPreparedStatement,
 	isSqlValues,
 	PreparedStatement,
-	SqlValues,
 } from "../QueryBuilder/types";
 import { isNotEmptyString, putBackticks } from "../QueryBuilder/utils";
 import {
@@ -753,17 +752,25 @@ export class DataAccessObject {
 						await this.connUseDatabase(conn, database);
 	
 						resolve(await callback(conn));
-	
-						// await this.connUseDefaultDatabase(conn);
-	
+						
+						await this.connUseDefaultDatabase(conn);
+						
 						conn.release();
+						console.log("MYSQL-ALL-IN-ONE: Connection released");
 					} catch (error) {
-						// await this.connUseDefaultDatabase(conn);
-						conn.release();
+						try {
+							console.log("MYSQL-ALL-IN-ONE: Error on connection execution");
+							await this.connUseDefaultDatabase(conn);
+							conn.release();
+						} catch (error) {
+							console.log("MYSQL-ALL-IN-ONE: Connection destroyed due to error.");
+							conn.destroy();
+						}
 						return reject(error);
 					}
 				});
 			} catch (error) {
+
 				reject(error);
 			}
 		});
@@ -789,11 +796,15 @@ export class DataAccessObject {
 		}
 	}
 	private async connUseDefaultDatabase(conn: PoolConnection) {
-		// Change back to the original connection database
-		if (isNotEmptyString(this.connectionData.database)) {
-			await this.connChangeUser(conn, {
-				database: this.connectionData.database,
-			});
+		try {
+			// Change back to the original connection database
+			if (isNotEmptyString(this.connectionData.database)) {
+				await this.connChangeUser(conn, {
+					database: this.connectionData.database,
+				});
+			}
+		} catch (error) {
+			throw error;
 		}
 	}
 
