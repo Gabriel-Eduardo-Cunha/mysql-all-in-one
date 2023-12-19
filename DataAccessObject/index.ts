@@ -754,11 +754,11 @@ export class DataAccessObject {
 	
 						resolve(await callback(conn));
 	
-						await this.connUseDefaultDatabase(conn);
+						// await this.connUseDefaultDatabase(conn);
 	
 						conn.release();
 					} catch (error) {
-						await this.connUseDefaultDatabase(conn);
+						// await this.connUseDefaultDatabase(conn);
 						conn.release();
 						return reject(error);
 					}
