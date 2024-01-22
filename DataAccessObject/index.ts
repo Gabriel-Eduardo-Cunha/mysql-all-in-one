@@ -756,14 +756,11 @@ export class DataAccessObject {
 						await this.connUseDefaultDatabase(conn);
 						
 						conn.release();
-						console.log("MYSQL-ALL-IN-ONE: Connection released");
 					} catch (error) {
 						try {
-							console.log("MYSQL-ALL-IN-ONE: Error on connection execution");
 							await this.connUseDefaultDatabase(conn);
 							conn.release();
 						} catch (error) {
-							console.log("MYSQL-ALL-IN-ONE: Connection destroyed due to error.");
 							conn.destroy();
 						}
 						return reject(error);
