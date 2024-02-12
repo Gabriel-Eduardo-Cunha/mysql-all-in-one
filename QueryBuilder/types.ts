@@ -1,4 +1,5 @@
-import { escVal } from './utils';
+import { escVal } from "./esc_val";
+
 
 export type SqlValues = string | Date | null | boolean | number | undefined;
 

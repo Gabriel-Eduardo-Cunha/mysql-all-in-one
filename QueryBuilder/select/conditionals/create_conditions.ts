@@ -1,3 +1,4 @@
+import { escVal } from '../../esc_val';
 import {
 	emptyPrepStatement,
 	isPreparedStatement,
@@ -8,10 +9,8 @@ import {
 } from '../../types';
 import {
 	escapeNames,
-	escVal,
 	putBrackets,
 	safeApplyAlias,
-	sqlExpression,
 } from '../../utils';
 import {
 	ConditionOptions,
