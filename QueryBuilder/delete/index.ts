@@ -1,8 +1,8 @@
+import { generateQueryFromPreparedStatement } from '../generate_query_from_prepared_statement';
 import { ConditionOptions } from '../select/conditionals/types';
 import where from '../select/conditionals/where';
 import { order } from '../select/order';
 import {
-	generateQueryFromPreparedStatement,
 	PreparedStatement,
 } from '../types';
 import { escapeNames, extractTableAlias } from '../utils';

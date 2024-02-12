@@ -1,5 +1,5 @@
+import { generateQueryFromPreparedStatement } from '../../generate_query_from_prepared_statement';
 import {
-	generateQueryFromPreparedStatement,
 	isSqlExpressionPreparedStatement,
 } from '../../types';
 import { escapeNames, safeApplyAlias } from '../../utils';

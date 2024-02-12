@@ -13,9 +13,9 @@ import {
 import { group } from './group';
 import { order } from './order';
 import {
-	generateQueryFromPreparedStatement,
 	PreparedStatement,
 } from '../types';
+import { generateQueryFromPreparedStatement } from '../generate_query_from_prepared_statement';
 
 export const tableObject = (
 	table: SelectTable | undefined

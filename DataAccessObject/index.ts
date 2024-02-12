@@ -10,7 +10,6 @@ import fs from "fs";
 import { mysqlSplitterOptions, splitQuery } from "dbgate-query-splitter";
 import { SelectOptions } from "../QueryBuilder/select/types";
 import {
-	generateQueryFromPreparedStatement,
 	isPreparedStatement,
 	isSqlValues,
 	PreparedStatement,
@@ -53,6 +52,7 @@ import {
 	isInsertRows,
 } from "../QueryBuilder/insert/types";
 import { exec } from "child_process";
+import { generateQueryFromPreparedStatement } from "../QueryBuilder/generate_query_from_prepared_statement";
 
 /**
  * @description With a DataAccessObject instance is possible to execute commands, dump databases and load dumps (or any .sql file)

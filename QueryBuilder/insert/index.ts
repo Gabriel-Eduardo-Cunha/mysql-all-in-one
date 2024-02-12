@@ -1,6 +1,5 @@
+import { generateQueryFromPreparedStatement } from '../generate_query_from_prepared_statement';
 import {
-	emptyPrepStatement,
-	generateQueryFromPreparedStatement,
 	isArrayOfStrings,
 	isSqlExpressionPreparedStatement,
 	PreparedStatement,
