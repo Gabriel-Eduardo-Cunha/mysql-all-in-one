@@ -1,4 +1,3 @@
-import { escVal } from "./esc_val";
 
 
 export type SqlValues = string | Date | null | boolean | number | undefined;
@@ -39,24 +38,6 @@ export const isPreparedStatement = (val: any): val is PreparedStatement =>
 	Array.isArray(val.values) &&
 	(val.values.length === 0 || val.values.every((v: any) => isSqlValues(v)));
 
-export const generateQueryFromPreparedStatement = (
-	preparedStatement: PreparedStatement
-): string => {
-	let { statement, values } = preparedStatement;
-	if (typeof statement !== "string") return "";
-	if (isPreparedStatement(statement)) return statement || "";
-
-	statement = `${statement.split(";").join("")};`;
-
-	const pieces = statement.split("?");
-	const firstPiece = pieces.shift();
-	return (
-		pieces.reduce(
-			(acc, cur, i) => `${acc}${escVal(values[i])}${cur}`,
-			firstPiece
-		) || ""
-	);
-};
 
 export class SqlColumn {
 	constructor(public column: string) {}
