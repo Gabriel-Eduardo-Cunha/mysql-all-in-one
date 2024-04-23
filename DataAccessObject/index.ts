@@ -95,14 +95,14 @@ export class DataAccessObject {
 				? this.execute
 				: this.query;
 
-		this.getPoolConnection(() => {
-			//Connection is OK
-		}).catch((err) => {
-			console.error(
-				"Could not start connection, check your connection credencials."
-			);
-			throw err;
-		});
+		// this.getPoolConnection(() => {
+		// 	//Connection is OK
+		// }).catch((err) => {
+		// 	console.error(
+		// 		"Could not start connection, check your connection credencials."
+		// 	);
+		// 	throw err;
+		// });
 	}
 
 	/**
