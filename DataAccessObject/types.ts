@@ -215,6 +215,7 @@ export interface Transaction {
 		rows: UpsertRow,
 		opts?: UpsertOptions
 	) => Promise<number | number[] | null>;
+	query: (query: string) => Promise<unknown>;
 	commit: () => Promise<void>;
 	rollback: () => Promise<void>;
 }

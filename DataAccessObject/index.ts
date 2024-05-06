@@ -661,6 +661,9 @@ export class DataAccessObject {
 												opts,
 												conn
 											),
+										query: (
+											sql: string | PreparedStatement
+										) => this.query(sql, database, conn),
 										commit: () =>
 											new Promise<void>((res, rej) => {
 												conn.commit((err) => {
