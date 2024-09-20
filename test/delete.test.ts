@@ -1,5 +1,5 @@
 import { QueryBuilder } from '..';
-import { sqlCol, sqlExpression } from '../QueryBuilder/utils';
+import { sqlCol } from '../QueryBuilder/utils';
 
 const query = QueryBuilder.deleteFrom(
 	'teste t',

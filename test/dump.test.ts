@@ -1,7 +1,5 @@
 import { DataAccessObject } from '../index';
 
-import * as QueryBuilder from '../QueryBuilder';
-
 const dao = new DataAccessObject({
 	host: 'localhost',
 	user: 'root',

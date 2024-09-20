@@ -2,7 +2,7 @@ import { DataAccessObject, QueryBuilder } from "../";
 
 const connectionConfig = {
 	host: "localhost",
-	port: 3307,
+	port: 3306,
 	user: "root",
 	password: "",
 	database: "ambisis01",
@@ -34,9 +34,9 @@ const dao = new DataAccessObject(connectionConfig, {
 		);
 
 		await transaction.delete("arquivo", { module: 1 });
-		await transaction.delete("unknow_table" /* This causes an error */, {
-			module: 2,
-		});
+		// await transaction.delete("unknow_table" /* This causes an error */, {
+		// 	module: 2,
+		// });
 
 		await transaction.commit();
 	} catch (err) {

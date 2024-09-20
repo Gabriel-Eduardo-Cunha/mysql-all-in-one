@@ -1,4 +1,4 @@
-import { sqlExpression } from '../QueryBuilder';
+import { sqlExpression } from '../QueryBuilder/sql_expression';
 
 const exp1 = sqlExpression`(SELECT id FROM table WHERE id = ${1})`;
 

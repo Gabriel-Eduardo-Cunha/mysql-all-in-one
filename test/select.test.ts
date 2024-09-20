@@ -3,7 +3,7 @@ import { DataAccessObject } from '../index';
 const dao = new DataAccessObject({
 	host: 'localhost',
 	user: 'root',
-	port: 3307,
+	port: 3306,
 	password: '',
 	database: 'ambisis',
 });
@@ -46,7 +46,7 @@ const user_exists = async (email: string) => {
 	console.log(r !== null);
 };
 
-user_exists('cunh.a@ambisis.com.br');
+user_exists('testeambisis@gmail.com');
 
 // list_first_user();
 

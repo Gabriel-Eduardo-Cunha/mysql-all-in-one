@@ -1,5 +1,5 @@
 import { DataAccessObject, QueryBuilder } from '../';
-import { sqlExpression } from '../QueryBuilder';
+import { sqlExpression } from '../QueryBuilder/sql_expression';
 
 const dao = new DataAccessObject({
 	host: "localhost",

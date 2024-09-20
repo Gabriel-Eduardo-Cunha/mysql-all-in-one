@@ -830,11 +830,7 @@ export class DataAccessObject {
 		conn: Connection,
 		sql: string | PreparedStatement
 	): Promise<
-		| mysql.RowDataPacket[]
-		| mysql.RowDataPacket[][]
-		| mysql.OkPacket
-		| mysql.OkPacket[]
-		| mysql.ResultSetHeader
+		mysql.QueryResult
 	> {
 		return new Promise((resolve, reject) => {
 			conn.query(

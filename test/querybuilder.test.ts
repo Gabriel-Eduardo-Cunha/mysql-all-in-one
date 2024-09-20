@@ -1,5 +1,5 @@
 import { QueryBuilder } from '..';
-import { sqlExpression } from '../QueryBuilder';
+import { sqlExpression } from '../QueryBuilder/sql_expression';
 import { sqlCol } from '../QueryBuilder/utils';
 
 const updateQuery = QueryBuilder.update(
