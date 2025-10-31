@@ -16,7 +16,7 @@ export const isAliasExpressionObject = (
 	Object.keys(val).length !== 0;
 
 type JoinTable = SelectTable;
-type JoinType = 'inner' | 'left' | 'right';
+type JoinType = 'inner' | 'left' | 'right' | 'full outer';
 export interface JoinObject {
 	/**
 	 * Table or expression Object
